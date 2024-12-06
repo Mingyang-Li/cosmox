@@ -223,9 +223,14 @@ type Where<T extends Base> = {
 type FindManyArgs<T extends Base> = {
   where?: Where<T>;
   take?: number;
-  paginationToken?: string;
+  nextCursor?: string;
   select?: Partial<Record<keyof T, boolean>>;
   orderBy?: Partial<Record<keyof T, 'ASC' | 'DESC'>>;
+};
+
+type FindManyResponse<T extends Base> = {
+  items: T[];
+  nextCursor?: string;
 };
 
 /** BaseModel class for querying CosmosDB */
@@ -245,23 +250,26 @@ export class BaseModel<T extends Base = typeof initial> {
   }
 
   /** Find many resources with pagination and type-safe filters */
-  public async findMany(args: FindManyArgs<T>): Promise<CosmosResource<T>[]> {
-    const { take, paginationToken } = args;
+  public async findMany(args: FindManyArgs<T>): Promise<FindManyResponse<T>> {
+    const { take, nextCursor } = args;
     const containerClient: Container = this.client;
 
     const query = buildQueryFindMany(args);
 
-    const result: FeedResponse<CosmosResource<T>> = await containerClient.items
-      .query(query, {
-        continuationToken: paginationToken,
-        maxItemCount: take,
-      })
-      .fetchNext();
+    const itemsRetrieved: FeedResponse<CosmosResource<T>> =
+      await containerClient.items
+        .query(query, {
+          continuationToken: nextCursor,
+          maxItemCount: take,
+        })
+        .fetchNext();
 
-    const results: CosmosResource<T>[] =
-      result.resources as CosmosResource<T>[];
+    const result: FindManyResponse<T> = {
+      items: itemsRetrieved?.resources as unknown as T[],
+      nextCursor: itemsRetrieved?.continuationToken,
+    };
 
-    return results;
+    return result;
   }
 }
 
