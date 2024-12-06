@@ -4,6 +4,7 @@
   "scripts": {
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
+    "test": "vitest",
     "build": "tsup src/index.ts",
     "dev": "tsup src/index.ts --watch",
     "prepare": "husky"
@@ -30,7 +31,8 @@
     "husky": "^9.1.7",
     "prettier": "^3.4.2",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   },
   "dependencies": {
     "@azure/cosmos": "^4.2.0",
