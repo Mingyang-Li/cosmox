@@ -5,13 +5,174 @@ import {
   Resource,
   FeedResponse,
 } from '@azure/cosmos';
-import { isString } from '@/utils';
+import { isNull, isString, isUndefined, objectIsEmpty } from '@/utils';
 import {
   BooleanFilter,
   DateFilter,
   NumberFilter,
   StringFilter,
 } from '@/types/filters';
+
+export type TFilter =
+  | keyof StringFilter
+  | keyof NumberFilter
+  | keyof BooleanFilter
+  | keyof DateFilter;
+
+export type FilterCondition = {
+  field: string;
+  filter: TFilter;
+  value: unknown;
+};
+
+export const createBooleanFilter = (condition: FilterCondition): string => {
+  if (condition.filter === 'equals') {
+    return `c.${condition.field} = ${condition.value}`;
+  }
+  if (condition.filter === 'not') {
+    return `c.${condition.field} != ${condition.value}`;
+  }
+  return '';
+};
+
+export const createStringFilter = (condition: FilterCondition): string => {
+  if (condition.filter === 'equals') {
+    return `c.${condition.field} = '${condition.value}'`;
+  }
+  if (condition.filter === 'startsWith') {
+    return `STARTSWITH(c.${condition.field}, '${condition.value}')`;
+  }
+  if (condition.filter === 'endsWith') {
+    return `c.${condition.field} LIKE '%${condition.value}'`;
+  }
+  if (condition.filter === 'not') {
+    return `c.${condition.field} != '${condition.value}'`;
+  }
+  if (condition.filter === 'gt') {
+    return `c.${condition.field} > '${condition.value}'`;
+  }
+  if (condition.filter === 'gte') {
+    return `c.${condition.field} >= '${condition.value}'`;
+  }
+  if (condition.filter === 'lt') {
+    return `c.${condition.field} < '${condition.value}'`;
+  }
+  if (condition.filter === 'lte') {
+    return `c.${condition.field} <= '${condition.value}'`;
+  }
+  if (condition.filter === 'in') {
+    if (Array.isArray(condition.value)) {
+      return `c.${condition.field} IN (${condition.value
+        .map((v) => `'${v}'`)
+        .join(',')})`;
+    }
+  }
+  if (condition.filter === 'notIn') {
+    if (Array.isArray(condition.value)) {
+      return `c.${condition.field} NOT IN (${condition.value
+        .map((v) => `'${v}'`)
+        .join(',')})`;
+    }
+  }
+  if (condition.filter === 'contains') {
+    return `CONTAINS(c.${condition.field}, '${condition.value}')`;
+  }
+  return '';
+};
+
+export const createNumberFilter = (condition: FilterCondition): string => {
+  if (condition.filter === 'equals') {
+    return `c.${condition.field} = '${condition.value}'`;
+  }
+  if (condition.filter === 'not') {
+    return `c.${condition.field} != '${condition.value}'`;
+  }
+  if (condition.filter === 'gt') {
+    return `c.${condition.field} > '${condition.value}'`;
+  }
+  if (condition.filter === 'gte') {
+    return `c.${condition.field} >= '${condition.value}'`;
+  }
+  if (condition.filter === 'lt') {
+    return `c.${condition.field} < '${condition.value}'`;
+  }
+  if (condition.filter === 'lte') {
+    return `c.${condition.field} <= '${condition.value}'`;
+  }
+  return '';
+};
+
+export const createDateFilter = (condition: FilterCondition): string => {
+  if (condition.filter === 'equals') {
+    return `c.${condition.field} = '${condition.value}'`;
+  }
+  if (condition.filter === 'not') {
+    return `c.${condition.field} != '${condition.value}'`;
+  }
+  if (condition.filter === 'gt') {
+    return `c.${condition.field} > '${condition.value}'`;
+  }
+  if (condition.filter === 'gte') {
+    return `c.${condition.field} >= '${condition.value}'`;
+  }
+  if (condition.filter === 'lt') {
+    return `c.${condition.field} < '${condition.value}'`;
+  }
+  if (condition.filter === 'lte') {
+    return `c.${condition.field} <= '${condition.value}'`;
+  }
+  return '';
+};
+
+export const constructFieldSelection = <T extends Base>(
+  args?: FindManyArgs<T>['select'],
+) => {
+  if (isNull(args) || isUndefined(args) || objectIsEmpty(args)) {
+    return '*';
+  }
+
+  return Object.keys(args)
+    ?.map((key) => `c.${key}`)
+    ?.join(', ');
+};
+
+export const constructOrderByClause = <T extends Base>(
+  args?: FindManyArgs<T>['orderBy'],
+) => {
+  if (isNull(args) || isUndefined(args) || objectIsEmpty(args)) {
+    return '';
+  }
+
+  return `ORDER BY ${Object.entries(args)
+    .map(([field, direction]) => `${field} ${direction}`)
+    .join(', ')}`;
+};
+
+export const buildQueryFindMany = <T extends Base>(dto: FindManyArgs<T>) => {
+  const { where, take, select, orderBy } = dto;
+
+  const fieldsSelected = constructFieldSelection(select);
+
+  const whereClause = '';
+
+  const orderByClause = orderBy
+    ? `ORDER BY ${Object.entries(orderBy)
+        .map(([field, direction]) => `${field} ${direction}`)
+        .join(', ')}`
+    : '';
+
+  const clauses = [
+    'SELECT',
+    fieldsSelected,
+    'FROM C',
+    whereClause,
+    orderByClause,
+  ];
+
+  const query = clauses?.join(' ');
+
+  return query;
+};
 
 export type Base = object;
 
@@ -59,6 +220,14 @@ type Where<T extends Base> = {
           : never;
 };
 
+type FindManyArgs<T extends Base> = {
+  where?: Where<T>;
+  take?: number;
+  paginationToken?: string;
+  select?: Partial<Record<keyof T, boolean>>;
+  orderBy?: Partial<Record<keyof T, 'ASC' | 'DESC'>>;
+};
+
 /** BaseModel class for querying CosmosDB */
 export class BaseModel<T extends Base = typeof initial> {
   client: Container;
@@ -70,97 +239,22 @@ export class BaseModel<T extends Base = typeof initial> {
       this.connectionStringSetting = options.connectionStringSetting;
     }
 
-    if (typeof this.options === 'boolean' && !this.options) {
-      this.fields = { id: false, timestamp: false };
-    }
-    if (typeof this.options === 'object') {
-      this.fields = {
-        ...this.fields,
-        ...(this.options.fields as AutoFields),
-      };
-    }
-
     this.client = options.client
       .database(options.database)
       .container(options.container);
   }
 
   /** Find many resources with pagination and type-safe filters */
-  public async findMany(args: {
-    where?: Where<T>; // Type-safe where clause
-    paginationToken?: string;
-    select?: Record<string, boolean>;
-    orderBy?: Record<string, 'ASC' | 'DESC'>;
-  }): Promise<CosmosResource<T>[]> {
-    const { where, paginationToken, select, orderBy } = args;
+  public async findMany(args: FindManyArgs<T>): Promise<CosmosResource<T>[]> {
+    const { take, paginationToken } = args;
     const containerClient: Container = this.client;
 
-    // Start building the query
-    let query = 'SELECT * FROM C';
-    let parameters: { name: string; value: any }[] = [];
+    const query = buildQueryFindMany(args);
 
-    // Handle 'where' filters with type-safety
-    if (where) {
-      const whereClauses: string[] = [];
-      for (const [field, value] of Object.entries(where)) {
-        // Ensure that the property exists in the model
-        if (!(field in {})) {
-          throw new Error(`Invalid field: ${field} in where clause`);
-        }
-
-        // Check for special operators like 'contains', 'gte', etc.
-        if ((value as any).contains !== undefined) {
-          whereClauses.push(`C.${field} LIKE @${field}_contains`);
-          parameters.push({
-            name: `@${field}_contains`,
-            value: `%${(value as any).contains}%`,
-          });
-        } else if ((value as any).gte !== undefined) {
-          whereClauses.push(`C.${field} >= @${field}_gte`);
-          parameters.push({ name: `@${field}_gte`, value: (value as any).gte });
-        } else if ((value as any).lte !== undefined) {
-          whereClauses.push(`C.${field} <= @${field}_lte`);
-          parameters.push({ name: `@${field}_lte`, value: (value as any).lte });
-        } else if ((value as any).not !== undefined) {
-          whereClauses.push(`C.${field} != @${field}_not`);
-          parameters.push({ name: `@${field}_not`, value: (value as any).not });
-        } else {
-          whereClauses.push(`C.${field} = @${field}`);
-          parameters.push({ name: `@${field}`, value });
-        }
-      }
-      if (whereClauses.length > 0) {
-        query += ' WHERE ' + whereClauses.join(' AND ');
-      }
-    }
-
-    // Handle pagination with 'paginationToken'
-    if (paginationToken) {
-      query += ` OFFSET @paginationToken`;
-      parameters.push({ name: '@paginationToken', value: paginationToken });
-    }
-
-    // Handle 'select' (fields to return)
-    const selectFields = select
-      ? Object.keys(select).filter((field) => select[field])
-      : [];
-    if (selectFields.length > 0) {
-      query = query.replace('*', selectFields.join(', '));
-    }
-
-    // Handle 'orderBy' for sorting
-    if (orderBy) {
-      const orderClauses = Object.entries(orderBy).map(
-        ([field, direction]) => `C.${field} ${direction}`,
-      );
-      query += ` ORDER BY ${orderClauses.join(', ')}`;
-    }
-
-    // Query the Cosmos container with pagination
-    let result: FeedResponse<CosmosResource<T>> = await containerClient.items
-      .query({
-        query,
-        parameters,
+    const result: FeedResponse<CosmosResource<T>> = await containerClient.items
+      .query(query, {
+        continuationToken: paginationToken,
+        maxItemCount: take,
       })
       .fetchNext();
 
@@ -201,9 +295,7 @@ export interface Options<M extends { [K: string]: BaseModel }> {
 
 export type DB<M extends Record<string, BaseModel>> = ReturnType<
   Options<M>['models']
-> & {
-  client: CosmosClient;
-};
+>;
 
 export const createClient = <M extends Record<string, BaseModel>>(
   options: Options<M>,
@@ -230,10 +322,7 @@ export const createClient = <M extends Record<string, BaseModel>>(
 
   const models = options.models(builder);
 
-  return {
-    client,
-    ...models,
-  };
+  return models;
 };
 
 const orm = createClient({

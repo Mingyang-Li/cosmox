@@ -1,4 +1,7 @@
-export type QueryMode = 'SENSITIVE' | 'INSENSITIVE';
+export enum QueryMode {
+  SENSITIVE = 'SENSITIVE',
+  INSENSITIVE = 'INSENSITIVE',
+}
 
 export type StringFilter = {
   equals?: string;
@@ -7,8 +10,8 @@ export type StringFilter = {
   contains?: string;
   startsWith?: string;
   endsWith?: string;
-  mode?: QueryMode;
   not?: string;
+  mode?: QueryMode;
 };
 
 export type BooleanFilter = {
