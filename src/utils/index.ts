@@ -37,5 +37,5 @@ export const objectIsEmpty = (args: Record<string, unknown>): boolean => {
 };
 
 export const isEmptyArray = (args: unknown): args is [] => {
-  return z.any().array().safeParse(args).success;
+  return z.any().array().max(0).safeParse(args).success;
 };

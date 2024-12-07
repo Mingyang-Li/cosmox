@@ -49,6 +49,12 @@ export const createBooleanFilter = (condition: FilterCondition): string => {
 };
 
 export const createStringFilter = (condition: FilterCondition): string => {
+  console.log(
+    `createStringFilter => ${condition?.field} | ${condition?.filter} | ${condition?.value}`,
+  );
+
+  console.log(`condition.filter === '${condition.filter}'`);
+
   if (condition.filter === 'equals') {
     return `c.${condition.field} = '${condition.value}'`;
   }
@@ -60,18 +66,6 @@ export const createStringFilter = (condition: FilterCondition): string => {
   }
   if (condition.filter === 'not') {
     return `c.${condition.field} != '${condition.value}'`;
-  }
-  if (condition.filter === 'gt') {
-    return `c.${condition.field} > '${condition.value}'`;
-  }
-  if (condition.filter === 'gte') {
-    return `c.${condition.field} >= '${condition.value}'`;
-  }
-  if (condition.filter === 'lt') {
-    return `c.${condition.field} < '${condition.value}'`;
-  }
-  if (condition.filter === 'lte') {
-    return `c.${condition.field} <= '${condition.value}'`;
   }
   if (condition.filter === 'in') {
     if (Array.isArray(condition.value)) {
@@ -158,23 +152,40 @@ export const createFilter = <T extends TFilter>(
 ): string => {
   const { field, filter } = args;
 
-  if (isStringFilter(filter)) {
-    console.log(`STRING-FILTER`);
-    // return createStringFilter({})
-  }
-  if (isNumberFilter(filter)) {
-    console.log(`NUMBER-FILTER`);
-  }
-  if (isBooleanFilter(filter)) {
-    console.log(`BOOLEAN-FILTER`);
-  }
-  if (isDateFilter(filter)) {
-    console.log(`DATE-FILTER`);
+  if (isNull(args) || isUndefined(args) || objectIsEmpty(args)) {
+    return '';
   }
 
-  console.log(
-    `field => ${field} (data-type: __) | filter => ${JSON.stringify(filter)} (filter-type: ${typeof filter})`,
-  );
+  const filterKey = Object.keys(filter) as unknown as FilterKey;
+
+  if (isStringFilter(filter)) {
+    return createStringFilter({
+      field,
+      filter: filterKey,
+      value: filter[filterKey],
+    });
+  }
+  if (isNumberFilter(filter)) {
+    return createNumberFilter({
+      field,
+      filter: filterKey,
+      value: filter[filterKey],
+    });
+  }
+  if (isBooleanFilter(filter)) {
+    return createBooleanFilter({
+      field,
+      filter: filterKey,
+      value: filter[filterKey],
+    });
+  }
+  if (isDateFilter(filter)) {
+    return createDateFilter({
+      field,
+      filter: filterKey,
+      value: filter[filterKey],
+    });
+  }
 
   // if (filter?.contains) {
   //   return `CONTAINS(c.${field}, '${filter.contains}')`;
@@ -227,6 +238,8 @@ export const buildWhereClause = <T extends Base>(
       return filterCondition ? filterCondition : '';
     })
     ?.filter((condition) => isNonEmptyString(condition));
+
+  console.log(`conditions => ${JSON.stringify(conditions)}`);
 
   const clauses = ['WHERE', conditions.join(' AND ')];
 

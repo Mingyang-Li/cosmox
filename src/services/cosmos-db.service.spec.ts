@@ -13,9 +13,7 @@ const query = buildQueryFindMany<User>({
     isSuperAdmin: {
       equals: true,
     },
-    createdAt: {
-      gte: new Date(),
-    },
+    createdAt: {},
     firstName: {
       contains: 'haha',
       mode: 'INSENSITIVE',
@@ -26,6 +24,7 @@ const query = buildQueryFindMany<User>({
   },
   select: {
     firstName: true,
+    lastName: false,
   },
   orderBy: {
     lastName: 'ASC',
