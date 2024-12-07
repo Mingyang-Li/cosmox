@@ -5,15 +5,28 @@ import {
   Resource,
   FeedResponse,
 } from '@azure/cosmos';
-import { isNull, isString, isUndefined, objectIsEmpty } from '@/utils';
+import {
+  isEmptyArray,
+  isNonEmptyString,
+  isNull,
+  isString,
+  isUndefined,
+  objectIsEmpty,
+} from '@/utils';
 import {
   BooleanFilter,
   DateFilter,
   NumberFilter,
   StringFilter,
+  isBooleanFilter,
+  isDateFilter,
+  isNumberFilter,
+  isStringFilter,
 } from '@/types/filters';
 
-export type TFilter =
+export type TFilter = StringFilter & NumberFilter & BooleanFilter & DateFilter;
+
+export type FilterKey =
   | keyof StringFilter
   | keyof NumberFilter
   | keyof BooleanFilter
@@ -21,7 +34,7 @@ export type TFilter =
 
 export type FilterCondition = {
   field: string;
-  filter: TFilter;
+  filter: FilterKey;
   value: unknown;
 };
 
@@ -82,22 +95,22 @@ export const createStringFilter = (condition: FilterCondition): string => {
 
 export const createNumberFilter = (condition: FilterCondition): string => {
   if (condition.filter === 'equals') {
-    return `c.${condition.field} = '${condition.value}'`;
+    return `c.${condition.field} = ${condition.value}${condition.value}`;
   }
   if (condition.filter === 'not') {
-    return `c.${condition.field} != '${condition.value}'`;
+    return `c.${condition.field} != ${condition.value}`;
   }
   if (condition.filter === 'gt') {
-    return `c.${condition.field} > '${condition.value}'`;
+    return `c.${condition.field} > ${condition.value}`;
   }
   if (condition.filter === 'gte') {
-    return `c.${condition.field} >= '${condition.value}'`;
+    return `c.${condition.field} >= ${condition.value}`;
   }
   if (condition.filter === 'lt') {
-    return `c.${condition.field} < '${condition.value}'`;
+    return `c.${condition.field} < ${condition.value}`;
   }
   if (condition.filter === 'lte') {
-    return `c.${condition.field} <= '${condition.value}'`;
+    return `c.${condition.field} <= ${condition.value}`;
   }
   return '';
 };
@@ -126,7 +139,7 @@ export const createDateFilter = (condition: FilterCondition): string => {
 
 export const constructFieldSelection = <T extends Base>(
   args?: FindManyArgs<T>['select'],
-) => {
+): string => {
   if (isNull(args) || isUndefined(args) || objectIsEmpty(args)) {
     return '*';
   }
@@ -136,30 +149,111 @@ export const constructFieldSelection = <T extends Base>(
     ?.join(', ');
 };
 
+export type CreateFilterArgs<T extends TFilter> = {
+  field: string;
+  filter: T;
+};
+export const createFilter = <T extends TFilter>(
+  args: CreateFilterArgs<T>,
+): string => {
+  const { field, filter } = args;
+
+  if (isStringFilter(filter)) {
+    console.log(`STRING-FILTER`);
+    // return createStringFilter({})
+  }
+  if (isNumberFilter(filter)) {
+    console.log(`NUMBER-FILTER`);
+  }
+  if (isBooleanFilter(filter)) {
+    console.log(`BOOLEAN-FILTER`);
+  }
+  if (isDateFilter(filter)) {
+    console.log(`DATE-FILTER`);
+  }
+
+  console.log(
+    `field => ${field} (data-type: __) | filter => ${JSON.stringify(filter)} (filter-type: ${typeof filter})`,
+  );
+
+  // if (filter?.contains) {
+  //   return `CONTAINS(c.${field}, '${filter.contains}')`;
+  // }
+  // if (filter?.startsWith) {
+  //   return `STARTSWITH(c.${field}, '${filter.startsWith}')`;
+  // }
+  // if (filter?.endsWith) {
+  //   return `ENDS WITH(c.${field}, '${filter.endsWith}')`;
+  // }
+  // if (filter?.equals) {
+  //   return `c.${field} = '${filter.equals}'`;
+  // }
+  // if (filter?.not) {
+  //   return `c.${field} != '${filter.not}'`;
+  // }
+  // if (filter?.gt) {
+  //   return `c.${field} > ${filter.gt}`;
+  // }
+  // if (filter?.gte) {
+  //   return `c.${field} >= ${filter.gte}`;
+  // }
+  // if (filter?.lt) {
+  //   return `c.${field} < ${filter.lt}`;
+  // }
+  // if (filter?.lte) {
+  //   return `c.${field} <= ${filter.lte}`;
+  // }
+  // if (filter?.in) {
+  //   return `c.${field} IN (${filter?.in?.map((v) => `'${v}'`).join(',')})`;
+  // }
+  // if (filter?.notIn) {
+  //   return `c.${field} NOT IN (${filter?.notIn?.map((v) => `'${v}'`).join(',')})`;
+  // }
+
+  return '';
+};
+
+export const buildWhereClause = <T extends Base>(
+  args: FindManyArgs<T>['where'],
+): string => {
+  if (isNull(args) || isUndefined(args) || objectIsEmpty(args)) {
+    return '';
+  }
+
+  const conditions: Array<string> = Object.entries(args)
+    ?.map(([field, filter]): string => {
+      const _filter = filter as TFilter;
+      const filterCondition = createFilter({ field, filter: _filter });
+      return filterCondition ? filterCondition : '';
+    })
+    ?.filter((condition) => isNonEmptyString(condition));
+
+  const clauses = ['WHERE', conditions.join(' AND ')];
+
+  const query = isEmptyArray(conditions) ? '' : clauses?.join(' ');
+  return query;
+};
+
 export const constructOrderByClause = <T extends Base>(
   args?: FindManyArgs<T>['orderBy'],
-) => {
+): string => {
   if (isNull(args) || isUndefined(args) || objectIsEmpty(args)) {
     return '';
   }
 
   return `ORDER BY ${Object.entries(args)
-    .map(([field, direction]) => `${field} ${direction}`)
+    .map(([field, direction]) => `c.${field} ${direction}`)
     .join(', ')}`;
 };
 
 export const buildQueryFindMany = <T extends Base>(dto: FindManyArgs<T>) => {
-  const { where, take, select, orderBy } = dto;
+  const { where, select, orderBy } = dto;
 
   const fieldsSelected = constructFieldSelection(select);
 
-  const whereClause = '';
+  const whereClause = buildWhereClause(where);
 
-  const orderByClause = orderBy
-    ? `ORDER BY ${Object.entries(orderBy)
-        .map(([field, direction]) => `${field} ${direction}`)
-        .join(', ')}`
-    : '';
+  const orderByClause = constructOrderByClause(orderBy);
 
   const clauses = [
     'SELECT',
@@ -167,7 +261,7 @@ export const buildQueryFindMany = <T extends Base>(dto: FindManyArgs<T>) => {
     'FROM C',
     whereClause,
     orderByClause,
-  ];
+  ]?.filter((clause) => isNonEmptyString(clause));
 
   const query = clauses?.join(' ');
 
@@ -333,24 +427,25 @@ export const createClient = <M extends Record<string, BaseModel>>(
   return models;
 };
 
-const orm = createClient({
-  connectionStringSetting: 'COSMOS_CONNECTION_STRING',
-  // Required, the name of the Cosmos database you want to create a client for
-  database: 'my-db',
-  // Optional, but kind of the whole point: create a map of containers -> models
-  // (t) is a helper function to create a model for a container
-  models: (t) => ({
-    // The createModel function accepts a generic, so you can get typed methods + returned data
-    user: t.createModel<{ name: string; email: string }>('User'),
-    post: t.createModel<{ id: string }>('Post'),
-    role: t.createModel('Role'),
-  }),
-});
+// const orm = createClient({
+//   connectionStringSetting: 'COSMOS_CONNECTION_STRING',
+//   // Required, the name of the Cosmos database you want to create a client for
+//   database: 'my-db',
+//   // Optional, but kind of the whole point: create a map of containers -> models
+//   // (t) is a helper function to create a model for a container
+//   models: (t) => ({
+//     // The createModel function accepts a generic, so you can get typed methods + returned data
+//     user: t.createModel<{ name: string; email: string }>('User'),
+//     post: t.createModel<{ id: string }>('Post'),
+//     role: t.createModel('Role'),
+//   }),
+// });
 
-orm.user.findMany({
-  where: {
-    name: {
-      contains: 'haha',
-    },
-  },
-});
+// orm.user.findMany({
+//   where: {
+//     name: {
+//       contains: 'haha',
+//       equals: 'hehe',
+//     },
+//   },
+// });
