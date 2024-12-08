@@ -1,14 +1,10 @@
+import { CosmosClient, Container, Resource, FeedResponse } from '@azure/cosmos';
 import {
-  CosmosClient,
-  Container,
-  ItemDefinition,
-  Resource,
-  FeedResponse,
-} from '@azure/cosmos';
-import {
+  isBoolean,
   isEmptyArray,
   isNonEmptyString,
   isNull,
+  isNumber,
   isString,
   isUndefined,
   objectIsEmpty,
@@ -18,118 +14,9 @@ import {
   DateFilter,
   NumberFilter,
   StringFilter,
-  isBooleanFilter,
-  isDateFilter,
-  isNumberFilter,
-  isStringFilter,
 } from '@/types/filters';
 
 export type TFilter = StringFilter & NumberFilter & BooleanFilter & DateFilter;
-
-export type FilterKey =
-  | keyof StringFilter
-  | keyof NumberFilter
-  | keyof BooleanFilter
-  | keyof DateFilter;
-
-export type FilterCondition = {
-  field: string;
-  filter: FilterKey;
-  value: unknown;
-};
-
-export const createBooleanFilter = (condition: FilterCondition): string => {
-  if (condition.filter === 'equals') {
-    return `c.${condition.field} = ${condition.value}`;
-  }
-  if (condition.filter === 'not') {
-    return `c.${condition.field} != ${condition.value}`;
-  }
-  return '';
-};
-
-export const createStringFilter = (condition: FilterCondition): string => {
-  console.log(
-    `createStringFilter => ${condition?.field} | ${condition?.filter} | ${condition?.value}`,
-  );
-
-  console.log(`condition.filter === '${condition.filter}'`);
-
-  if (condition.filter === 'equals') {
-    return `c.${condition.field} = '${condition.value}'`;
-  }
-  if (condition.filter === 'startsWith') {
-    return `STARTSWITH(c.${condition.field}, '${condition.value}')`;
-  }
-  if (condition.filter === 'endsWith') {
-    return `c.${condition.field} LIKE '%${condition.value}'`;
-  }
-  if (condition.filter === 'not') {
-    return `c.${condition.field} != '${condition.value}'`;
-  }
-  if (condition.filter === 'in') {
-    if (Array.isArray(condition.value)) {
-      return `c.${condition.field} IN (${condition.value
-        .map((v) => `'${v}'`)
-        .join(',')})`;
-    }
-  }
-  if (condition.filter === 'notIn') {
-    if (Array.isArray(condition.value)) {
-      return `c.${condition.field} NOT IN (${condition.value
-        .map((v) => `'${v}'`)
-        .join(',')})`;
-    }
-  }
-  if (condition.filter === 'contains') {
-    return `CONTAINS(c.${condition.field}, '${condition.value}')`;
-  }
-  return '';
-};
-
-export const createNumberFilter = (condition: FilterCondition): string => {
-  if (condition.filter === 'equals') {
-    return `c.${condition.field} = ${condition.value}${condition.value}`;
-  }
-  if (condition.filter === 'not') {
-    return `c.${condition.field} != ${condition.value}`;
-  }
-  if (condition.filter === 'gt') {
-    return `c.${condition.field} > ${condition.value}`;
-  }
-  if (condition.filter === 'gte') {
-    return `c.${condition.field} >= ${condition.value}`;
-  }
-  if (condition.filter === 'lt') {
-    return `c.${condition.field} < ${condition.value}`;
-  }
-  if (condition.filter === 'lte') {
-    return `c.${condition.field} <= ${condition.value}`;
-  }
-  return '';
-};
-
-export const createDateFilter = (condition: FilterCondition): string => {
-  if (condition.filter === 'equals') {
-    return `c.${condition.field} = '${condition.value}'`;
-  }
-  if (condition.filter === 'not') {
-    return `c.${condition.field} != '${condition.value}'`;
-  }
-  if (condition.filter === 'gt') {
-    return `c.${condition.field} > '${condition.value}'`;
-  }
-  if (condition.filter === 'gte') {
-    return `c.${condition.field} >= '${condition.value}'`;
-  }
-  if (condition.filter === 'lt') {
-    return `c.${condition.field} < '${condition.value}'`;
-  }
-  if (condition.filter === 'lte') {
-    return `c.${condition.field} <= '${condition.value}'`;
-  }
-  return '';
-};
 
 export const constructFieldSelection = <T extends Base>(
   args?: FindManyArgs<T>['select'],
@@ -143,83 +30,96 @@ export const constructFieldSelection = <T extends Base>(
     ?.join(', ');
 };
 
-export type CreateFilterArgs<T extends TFilter> = {
+type CreateFilterArgs<TFilterKey extends keyof TFilter> = {
   field: string;
-  filter: T;
+  filterKey: TFilterKey;
+  value: unknown;
 };
-export const createFilter = <T extends TFilter>(
-  args: CreateFilterArgs<T>,
+
+export const createFilter = <TFilterKey extends keyof TFilter>(
+  args: CreateFilterArgs<TFilterKey>,
 ): string => {
-  const { field, filter } = args;
+  const { field, filterKey, value } = args;
 
   if (isNull(args) || isUndefined(args) || objectIsEmpty(args)) {
     return '';
   }
 
-  const filterKey = Object.keys(filter) as unknown as FilterKey;
-
-  if (isStringFilter(filter)) {
-    return createStringFilter({
-      field,
-      filter: filterKey,
-      value: filter[filterKey],
-    });
-  }
-  if (isNumberFilter(filter)) {
-    return createNumberFilter({
-      field,
-      filter: filterKey,
-      value: filter[filterKey],
-    });
-  }
-  if (isBooleanFilter(filter)) {
-    return createBooleanFilter({
-      field,
-      filter: filterKey,
-      value: filter[filterKey],
-    });
-  }
-  if (isDateFilter(filter)) {
-    return createDateFilter({
-      field,
-      filter: filterKey,
-      value: filter[filterKey],
-    });
+  if (filterKey === 'contains') {
+    return `CONTAINS(c.${field}, '${value}')`;
   }
 
-  // if (filter?.contains) {
-  //   return `CONTAINS(c.${field}, '${filter.contains}')`;
-  // }
-  // if (filter?.startsWith) {
-  //   return `STARTSWITH(c.${field}, '${filter.startsWith}')`;
-  // }
-  // if (filter?.endsWith) {
-  //   return `ENDS WITH(c.${field}, '${filter.endsWith}')`;
-  // }
-  // if (filter?.equals) {
-  //   return `c.${field} = '${filter.equals}'`;
-  // }
-  // if (filter?.not) {
-  //   return `c.${field} != '${filter.not}'`;
-  // }
-  // if (filter?.gt) {
-  //   return `c.${field} > ${filter.gt}`;
-  // }
-  // if (filter?.gte) {
-  //   return `c.${field} >= ${filter.gte}`;
-  // }
-  // if (filter?.lt) {
-  //   return `c.${field} < ${filter.lt}`;
-  // }
-  // if (filter?.lte) {
-  //   return `c.${field} <= ${filter.lte}`;
-  // }
-  // if (filter?.in) {
-  //   return `c.${field} IN (${filter?.in?.map((v) => `'${v}'`).join(',')})`;
-  // }
-  // if (filter?.notIn) {
-  //   return `c.${field} NOT IN (${filter?.notIn?.map((v) => `'${v}'`).join(',')})`;
-  // }
+  if (filterKey === 'startsWith') {
+    return `STARTSWITH(c.${field}, '${value}')`;
+  }
+
+  if (filterKey === 'endsWith') {
+    return `ENDS WITH(c.${field}, '${value}')`;
+  }
+
+  if (filterKey === 'equals') {
+    if (isBoolean(value) || isNumber(value)) {
+      return `c.${field} = ${value}`;
+    }
+    return `c.${field} = '${value}'`;
+  }
+
+  if (filterKey === 'not') {
+    if (isBoolean(value) || isNumber(value)) {
+      return `c.${field} != ${value}`;
+    }
+    return `c.${field} != '${value}'`;
+  }
+
+  if (filterKey === 'gt') {
+    if (isBoolean(value) || isNumber(value)) {
+      return `c.${field} > ${value}`;
+    }
+    return `c.${field} > '${value}'`;
+  }
+
+  if (filterKey === 'gte') {
+    if (isBoolean(value) || isNumber(value)) {
+      return `c.${field} >= ${value}`;
+    }
+    return `c.${field} >= '${value}'`;
+  }
+
+  if (filterKey === 'lt') {
+    if (isBoolean(value) || isNumber(value)) {
+      return `c.${field} < ${value}`;
+    }
+    return `c.${field} < '${value}'`;
+  }
+
+  if (filterKey === 'lte') {
+    if (isBoolean(value) || isNumber(value)) {
+      return `c.${field} <= ${value}`;
+    }
+    return `c.${field} <= '${value}'`;
+  }
+
+  if (filterKey === 'in') {
+    return `c.${field} IN (${(value as [])
+      ?.map((v) => {
+        if (isBoolean(v) || isNumber(v)) {
+          return v;
+        }
+        return `'${v}'`;
+      })
+      .join(',')})`;
+  }
+
+  if (filterKey === 'notIn') {
+    return `c.${field} NOT IN (${(value as [])
+      ?.map((v) => {
+        if (isBoolean(v) || isNumber(v)) {
+          return v;
+        }
+        return `'${v}'`;
+      })
+      .join(',')})`;
+  }
 
   return '';
 };
@@ -232,18 +132,29 @@ export const buildWhereClause = <T extends Base>(
   }
 
   const conditions: Array<string> = Object.entries(args)
-    ?.map(([field, filter]): string => {
-      const _filter = filter as TFilter;
-      const filterCondition = createFilter({ field, filter: _filter });
-      return filterCondition ? filterCondition : '';
+    ?.map(([field, filters]): Array<string> => {
+      const filterQueriesForCurrentField = Object.entries(
+        filters as TFilter,
+      )?.map(([filterKey, value]): string => {
+        const _filterKey = filterKey as keyof TFilter;
+        const filterCondition = createFilter({
+          field,
+          filterKey: _filterKey,
+          value,
+        });
+        return filterCondition;
+      });
+      return filterQueriesForCurrentField;
     })
-    ?.filter((condition) => isNonEmptyString(condition));
+    ?.flatMap((item) => item)
+    ?.filter((item) => isNonEmptyString(item));
 
-  console.log(`conditions => ${JSON.stringify(conditions)}`);
+  if (isEmptyArray(conditions)) {
+    return '';
+  }
 
   const clauses = ['WHERE', conditions.join(' AND ')];
-
-  const query = isEmptyArray(conditions) ? '' : clauses?.join(' ');
+  const query = clauses?.join(' ');
   return query;
 };
 
@@ -277,7 +188,6 @@ export const buildQueryFindMany = <T extends Base>(dto: FindManyArgs<T>) => {
   ]?.filter((clause) => isNonEmptyString(clause));
 
   const query = clauses?.join(' ');
-
   return query;
 };
 
@@ -285,7 +195,6 @@ export type Base = object;
 
 // Type to represent a Cosmos Resource
 type CosmosResource<T extends Base> = Resource & T;
-type CosmosItemDefinition<T extends Base> = ItemDefinition & T;
 
 interface AutoFields {
   /** Automatically generate an ID on document creation - defaults to true */
@@ -439,26 +348,3 @@ export const createClient = <M extends Record<string, BaseModel>>(
 
   return models;
 };
-
-// const orm = createClient({
-//   connectionStringSetting: 'COSMOS_CONNECTION_STRING',
-//   // Required, the name of the Cosmos database you want to create a client for
-//   database: 'my-db',
-//   // Optional, but kind of the whole point: create a map of containers -> models
-//   // (t) is a helper function to create a model for a container
-//   models: (t) => ({
-//     // The createModel function accepts a generic, so you can get typed methods + returned data
-//     user: t.createModel<{ name: string; email: string }>('User'),
-//     post: t.createModel<{ id: string }>('Post'),
-//     role: t.createModel('Role'),
-//   }),
-// });
-
-// orm.user.findMany({
-//   where: {
-//     name: {
-//       contains: 'haha',
-//       equals: 'hehe',
-//     },
-//   },
-// });

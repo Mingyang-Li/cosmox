@@ -8,8 +8,6 @@ export type QueryMode = z.infer<typeof QueryModeSchema>;
 export const StringFilterSchema = z
   .object({
     equals: z.string().optional(),
-    in: z.array(z.string()).optional(),
-    notIn: z.array(z.string()).optional(),
     contains: z.string().optional(),
     startsWith: z.string().optional(),
     endsWith: z.string().optional(),
