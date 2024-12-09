@@ -15,6 +15,8 @@ import {
   NumberFilter,
   StringFilter,
 } from '@/types/filters';
+import { Z } from 'vitest/dist/chunks/reporters.D7Jzd9GS';
+import { z } from 'zod';
 
 export type TFilter = StringFilter & NumberFilter & BooleanFilter & DateFilter;
 
@@ -54,7 +56,7 @@ export const createFilter = <TFilterKey extends keyof TFilter>(
   }
 
   if (filterKey === 'endsWith') {
-    return `ENDS WITH(c.${field}, '${value}')`;
+    return `ENDSWITH(c.${field},'${value}')`;
   }
 
   if (filterKey === 'equals') {
@@ -255,7 +257,7 @@ export class BaseModel<T extends Base = typeof initial> {
   connectionStringSetting = 'COSMOS_CONNECTION_STRING';
   fields: AutoFields = { ...defaultFields };
 
-  constructor(private options: ModelOptions) {
+  constructor(private readonly options: ModelOptions) {
     if (options.connectionStringSetting) {
       this.connectionStringSetting = options.connectionStringSetting;
     }
@@ -268,6 +270,16 @@ export class BaseModel<T extends Base = typeof initial> {
   /** Find many resources with pagination and type-safe filters */
   public async findMany(args: FindManyArgs<T>): Promise<FindManyResponse<T>> {
     const { take, nextCursor } = args;
+
+    // validate "take" if provided by user
+    if (!isNull(take) && !isUndefined(take)) {
+      if (z.number().int().min(1).safeParse(take).success === false) {
+        throw new Error(
+          `Please make sure "take" is a positive integer. You provided ${take} `,
+        );
+      }
+    }
+
     const containerClient: Container = this.client;
 
     const query = buildQueryFindMany(args);
