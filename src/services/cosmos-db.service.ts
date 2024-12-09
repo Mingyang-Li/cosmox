@@ -1,5 +1,7 @@
 import { CosmosClient, Container, Resource, FeedResponse } from '@azure/cosmos';
+import { z } from 'zod';
 import {
+  isArray,
   isBoolean,
   isEmptyArray,
   isNonEmptyString,
@@ -15,8 +17,7 @@ import {
   NumberFilter,
   StringFilter,
 } from '@/types/filters';
-import { Z } from 'vitest/dist/chunks/reporters.D7Jzd9GS';
-import { z } from 'zod';
+import { fromPromise } from 'neverthrow';
 
 export type TFilter = StringFilter & NumberFilter & BooleanFilter & DateFilter;
 
@@ -280,24 +281,36 @@ export class BaseModel<T extends Base = typeof initial> {
       }
     }
 
-    const containerClient: Container = this.client;
+    const container: Container = this.client;
 
     const query = buildQueryFindMany(args);
 
-    const itemsRetrieved: FeedResponse<CosmosResource<T>> =
-      await containerClient.items
+    const result = await fromPromise<FeedResponse<CosmosResource<T>>, unknown>(
+      container.items
         .query(query, {
           continuationToken: nextCursor,
           maxItemCount: take,
         })
-        .fetchNext();
+        .fetchNext(),
+      (e) => e,
+    );
+    if (result.isErr()) {
+      const message = `Failed to retrieve items form db. ${JSON.stringify(result.error)}`;
+      throw new Error(message);
+    }
 
-    const result: FindManyResponse<T> = {
-      items: itemsRetrieved?.resources as unknown as T[],
-      nextCursor: itemsRetrieved?.continuationToken,
+    const { resources, continuationToken } = result.value;
+    if (isArray<T>(resources) === false) {
+      const message = `Retrieved data from db, but received ${typeof resources} instead of a list of items`;
+      throw new Error(message);
+    }
+
+    const response: FindManyResponse<T> = {
+      items: resources as unknown as T[],
+      nextCursor: continuationToken,
     };
 
-    return result;
+    return response;
   }
 }
 

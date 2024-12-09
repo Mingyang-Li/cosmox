@@ -12,7 +12,7 @@ export const isBoolean = (args: unknown): args is boolean => {
   return z.boolean().safeParse(args).success;
 };
 
-export const isNumber = (args: unknown): args is Number => {
+export const isNumber = (args: unknown): args is number => {
   return z.number().safeParse(args).success;
 };
 
@@ -34,6 +34,10 @@ export const isObject = (args: unknown): args is Record<string, unknown> => {
 
 export const objectIsEmpty = (args: Record<string, unknown>): boolean => {
   return Object.keys(args).length === 0;
+};
+
+export const isArray = <T>(args: unknown): args is T[] => {
+  return z.any().array().safeParse(args).success;
 };
 
 export const isEmptyArray = (args: unknown): args is [] => {

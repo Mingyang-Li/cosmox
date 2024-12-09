@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { buildQueryFindMany, buildWhereClause } from './cosmos-db.service';
+import { buildQueryFindMany } from './cosmos-db.service';
 
 type User = {
   firstName: string;
