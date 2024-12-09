@@ -1,4 +1,10 @@
-import { CosmosClient, Container, Resource, FeedResponse } from '@azure/cosmos';
+import {
+  CosmosClient,
+  Container,
+  Resource,
+  FeedResponse,
+  ErrorResponse,
+} from '@azure/cosmos';
 import { z } from 'zod';
 import {
   isArray,
@@ -7,7 +13,6 @@ import {
   isNonEmptyString,
   isNull,
   isNumber,
-  isString,
   isUndefined,
   objectIsEmpty,
 } from '@/utils';
@@ -185,7 +190,7 @@ export const buildQueryFindMany = <T extends Base>(dto: FindManyArgs<T>) => {
   const clauses = [
     'SELECT',
     fieldsSelected,
-    'FROM C',
+    'FROM c',
     whereClause,
     orderByClause,
   ]?.filter((clause) => isNonEmptyString(clause));
@@ -285,17 +290,22 @@ export class BaseModel<T extends Base = typeof initial> {
 
     const query = buildQueryFindMany(args);
 
-    const result = await fromPromise<FeedResponse<CosmosResource<T>>, unknown>(
+    console.log(`QUERY => ${query}`);
+
+    const result = await fromPromise<
+      FeedResponse<CosmosResource<T>>,
+      ErrorResponse
+    >(
       container.items
         .query(query, {
           continuationToken: nextCursor,
           maxItemCount: take,
         })
         .fetchNext(),
-      (e) => e,
+      (e) => e as ErrorResponse,
     );
     if (result.isErr()) {
-      const message = `Failed to retrieve items form db. ${JSON.stringify(result.error)}`;
+      const message = `Failed to retrieve items form db. ${result.error?.message}`;
       throw new Error(message);
     }
 
@@ -315,27 +325,19 @@ export class BaseModel<T extends Base = typeof initial> {
 }
 
 interface Builder {
-  createModel: <T extends Base>(
-    container: string,
-    options?: Pick<ModelOptions, 'fields'>,
-  ) => BaseModel<T>;
+  createModel: <T extends Base>(args: {
+    container: string;
+    options?: Pick<ModelOptions, 'fields'>;
+  }) => BaseModel<T>;
 }
 
 /** Default client configuration - for example the connection string setting, and the database name. */
 export interface Options<M extends { [K: string]: BaseModel }> {
   /** The name of the Cosmos database */
   database: string;
+
   /**
-   * The name of the env of the Cosmos connection string - defaults to `COSMOS_CONNECTION_STRING`.
-   * This can be replaced by directly passing in the connection string with the `connectionString` option,
-   * but if you are using the binding shortcuts then this setting is required as it is used in the Azure Function bindings.
-   */
-  connectionStringSetting?: string;
-  /**
-   * The Cosmos connection string - overrides using the `connectionStringSetting` env.
-   *
-   * Preferably use the `connectionStringSetting` with the connection string as an environment variable if you are using
-   * this within an Azure Functions app.
+   * The Cosmos connection string
    */
   connectionString?: string;
   /** A list of the models to create, and their container names. */
@@ -349,24 +351,13 @@ export type DB<M extends Record<string, BaseModel>> = ReturnType<
 export const createClient = <M extends Record<string, BaseModel>>(
   options: Options<M>,
 ): DB<M> => {
-  const connectionStringSetting =
-    options.connectionStringSetting || 'COSMOS_CONNECTION_STRING';
-  const connectionString =
-    options.connectionString ?? process.env[connectionStringSetting];
-
-  if (!isString(connectionString)) {
-    if (options.connectionString)
-      throw new Error(
-        'Missing connection string value (from `options.connectionString`)',
-      );
-    throw new Error(`Missing connection string for ${connectionStringSetting}`);
-  }
-
-  const client = new CosmosClient(connectionString);
+  const client = new CosmosClient(options?.connectionString ?? '');
 
   const builder: Builder = {
-    createModel: (container) =>
-      new BaseModel({ client, container, ...options }),
+    createModel: (args: { container: string }) => {
+      const { container } = args;
+      return new BaseModel({ client, container, ...options });
+    },
   };
 
   const models = options.models(builder);

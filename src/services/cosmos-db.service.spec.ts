@@ -41,5 +41,3 @@ test('pass', () => {
   console.log(`query => ${query}`);
   expect(true).toEqual(true);
 });
-
-const QUERY = `SELECT c.firstName, c.lastName FROM C WHERE c.isSuperAdmin = true AND LOWER(c.firstName) CONTAINS LOWER('haha') AND c.lastName = 'hehe' ORDER BY c.lastName ASC`;
