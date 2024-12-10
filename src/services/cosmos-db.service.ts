@@ -333,7 +333,7 @@ export class BaseModel<T extends Base = typeof initial> {
       .container(options.container);
   }
 
-  /** Find many resources with pagination and type-safe filters */
+  /** Find many items with pagination and type-safe filters */
   public async findMany(args: FindManyArgs<T>): Promise<FindManyResponse<T>> {
     const { take, nextCursor } = args;
 
@@ -381,6 +381,9 @@ export class BaseModel<T extends Base = typeof initial> {
     return response;
   }
 
+  /**
+   * Find item by ID
+   */
   public async findOne<T extends Base>(args: FindOneArgs<T>): Promise<T> {
     const { where } = args;
 
@@ -426,6 +429,9 @@ export class BaseModel<T extends Base = typeof initial> {
     return response;
   }
 
+  /**
+   * Create an item
+   */
   public async create(args: CreateArgs<T>): Promise<T> {
     const { data } = args;
 
@@ -457,6 +463,9 @@ export class BaseModel<T extends Base = typeof initial> {
     return resource as T;
   }
 
+  /**
+   * Update an item
+   */
   public async update(args: UpdateArgs<T>): Promise<T> {
     const { where, data } = args;
     const { id } = where;
@@ -510,6 +519,9 @@ export class BaseModel<T extends Base = typeof initial> {
     return replaceItem.value?.resource as T;
   }
 
+  /**
+   * @warning Permanently delete an item
+   */
   public async delete(args: FindOneArgs<T>): Promise<void> {
     const { where } = args;
     const { id } = where;
