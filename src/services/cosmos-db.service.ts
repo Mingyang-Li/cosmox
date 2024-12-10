@@ -4,9 +4,10 @@ import {
   Resource,
   FeedResponse,
   ErrorResponse,
+  ItemResponse,
 } from '@azure/cosmos';
 import { z } from 'zod';
-import { fromPromise } from 'neverthrow';
+import { err, fromPromise } from 'neverthrow';
 import {
   isArray,
   isBoolean,
@@ -14,6 +15,7 @@ import {
   isNonEmptyString,
   isNull,
   isNumber,
+  isObject,
   isUndefined,
   objectIsEmpty,
 } from '@/utils';
@@ -26,6 +28,19 @@ import {
 } from '@/types/filters';
 
 export type TFilter = StringFilter & NumberFilter & BooleanFilter & DateFilter;
+
+export const IdSchema = z
+  .string()
+  .min(1)
+  .refine(
+    (value) => {
+      const regex = /^\S+$/;
+      return regex.test(value);
+    },
+    {
+      message: `ID should not contain space characters, nor can it be an empty string.`,
+    },
+  );
 
 export const constructFieldSelection = <T extends Base>(
   args?: FindManyArgs<T>['select'],
@@ -214,6 +229,22 @@ export const buildQueryFindMany = <T extends Base>(dto: FindManyArgs<T>) => {
   return query;
 };
 
+export const buildQueryFindOne = <T extends Base>(dto: FindOneArgs<T>) => {
+  const { where, select } = dto;
+
+  const fieldsSelected = constructFieldSelection(select);
+
+  const { id } = where;
+  const whereClause = `WHERE c.id = '${id}'`;
+
+  const clauses = ['SELECT', fieldsSelected, 'FROM c', whereClause]?.filter(
+    (clause) => isNonEmptyString(clause),
+  );
+
+  const query = clauses?.join(' ');
+  return query;
+};
+
 export type Base = object;
 
 // Type to represent a Cosmos Resource
@@ -259,7 +290,7 @@ type Where<T extends Base> = {
           : never;
 };
 
-type FindManyArgs<T extends Base> = {
+export type FindManyArgs<T extends Base> = {
   where?: Where<T>;
   take?: number;
   nextCursor?: string;
@@ -267,9 +298,23 @@ type FindManyArgs<T extends Base> = {
   orderBy?: Partial<Record<keyof T, 'ASC' | 'DESC'>>;
 };
 
-type FindManyResponse<T extends Base> = {
+export type FindManyResponse<T extends Base> = {
   items: T[];
   nextCursor?: string;
+};
+
+export type FindOneArgs<T extends Base> = {
+  where: { id: string };
+  select?: Partial<Record<keyof T, boolean>>;
+};
+
+export type CreateArgs<T extends Base> = {
+  data: T;
+};
+
+export type UpdateArgs<T extends Base> = {
+  where: { id: string };
+  data: T;
 };
 
 /** BaseModel class for querying CosmosDB */
@@ -318,7 +363,7 @@ export class BaseModel<T extends Base = typeof initial> {
       (e) => e as ErrorResponse,
     );
     if (result.isErr()) {
-      const message = `Failed to retrieve items form db. ${result.error?.message}`;
+      const message = `Failed to retrieve items from db. ${result.error?.message}`;
       throw new Error(message);
     }
 
@@ -334,6 +379,135 @@ export class BaseModel<T extends Base = typeof initial> {
     };
 
     return response;
+  }
+
+  public async findOne<T extends Base>(args: FindOneArgs<T>): Promise<T> {
+    const { where } = args;
+
+    const validateId = IdSchema.safeParse(where?.id);
+    if (validateId.success === false) {
+      throw new Error(validateId?.error?.message);
+    }
+
+    // use query builder instead of sdk to maximise for performance
+    const query = buildQueryFindOne(args);
+
+    const container: Container = this.client;
+
+    const result = await fromPromise<
+      FeedResponse<CosmosResource<T>>,
+      ErrorResponse
+    >(
+      container.items
+        .query(query, {
+          maxItemCount: 1,
+        })
+        .fetchAll(),
+      (e) => e as ErrorResponse,
+    );
+    if (result.isErr()) {
+      const message = `Failed to retrieve item form db. ${result.error?.message}`;
+      throw new Error(message);
+    }
+
+    const { resources } = result.value;
+    if (isArray<T>(resources) === false) {
+      const message = `Retrieved data from db, but received ${typeof resources} instead of a list of items`;
+      throw new Error(message);
+    }
+
+    if (isEmptyArray(resources)) {
+      const message = `We cannot find anything using the ID you provided`;
+      throw new Error(message);
+    }
+
+    const response: T = resources[0] as T;
+
+    return response;
+  }
+
+  public async create(args: CreateArgs<T>): Promise<T> {
+    const { data } = args;
+
+    if (!isObject(data)) {
+      throw new Error(
+        `Please provide an object as payload. You provided "${data}"`,
+      );
+    }
+
+    if (objectIsEmpty(data)) {
+      throw new Error(
+        `Please provide an non-empty object as payload. You provided "{}"`,
+      );
+    }
+
+    const container: Container = this.client;
+
+    const result = await fromPromise<ItemResponse<T>, ErrorResponse>(
+      container.items.create(data),
+      (e) => e as ErrorResponse,
+    );
+
+    if (result.isErr()) {
+      const message = `Failed to create item in db. ${result.error?.message}`;
+      throw new Error(message);
+    }
+
+    const { resource } = result.value;
+    return resource as T;
+  }
+
+  public async update(args: UpdateArgs<T>): Promise<T> {
+    const { where, data } = args;
+    const { id } = where;
+
+    const validateId = IdSchema.safeParse(id);
+    if (validateId.success === false) {
+      throw new Error(validateId?.error?.message);
+    }
+
+    if (!isObject(data)) {
+      throw new Error(
+        `Please provide an object as payload. You provided "${data}"`,
+      );
+    }
+
+    if (objectIsEmpty(data)) {
+      throw new Error(
+        `Please provide an non-empty object as payload. You provided "{}"`,
+      );
+    }
+
+    // check if item in db
+    const checkItemInDb = await fromPromise(
+      this.findOne<{ id: string }>({
+        where,
+        select: { id: true },
+      }),
+      (e) => e as Error,
+    );
+    if (checkItemInDb.isErr()) {
+      throw new Error(
+        `Failed to update item in db. The item you're trying update cannot be found.`,
+      );
+    }
+
+    // replace item
+    const existingItem = checkItemInDb.value;
+    const container: Container = this.client;
+    const replaceItem = await fromPromise<ItemResponse<T>, ErrorResponse>(
+      container.item(id, id).replace({
+        ...existingItem,
+        ...data,
+      }),
+      (e) => e as ErrorResponse,
+    );
+
+    if (replaceItem.isErr()) {
+      const message = `Failed to update item. ${replaceItem.error?.message}`;
+      throw new Error(message);
+    }
+    return replaceItem.value?.resource as T;
   }
 }
 
