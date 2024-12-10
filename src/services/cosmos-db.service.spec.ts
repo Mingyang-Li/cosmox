@@ -16,7 +16,7 @@ const query = buildQueryFindMany<User>({
     },
     firstName: {
       startsWith: 'haha',
-      endsWith: 'hehe',
+      endsWith: 'hEEh',
       mode: 'INSENSITIVE',
     },
     lastName: {

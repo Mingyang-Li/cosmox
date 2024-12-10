@@ -6,6 +6,7 @@ import {
   ErrorResponse,
 } from '@azure/cosmos';
 import { z } from 'zod';
+import { fromPromise } from 'neverthrow';
 import {
   isArray,
   isBoolean,
@@ -20,9 +21,9 @@ import {
   BooleanFilter,
   DateFilter,
   NumberFilter,
+  QueryMode,
   StringFilter,
 } from '@/types/filters';
-import { fromPromise } from 'neverthrow';
 
 export type TFilter = StringFilter & NumberFilter & BooleanFilter & DateFilter;
 
@@ -41,27 +42,37 @@ export const constructFieldSelection = <T extends Base>(
 type CreateFilterArgs<TFilterKey extends keyof TFilter> = {
   field: string;
   filterKey: TFilterKey;
+  mode: QueryMode;
   value: unknown;
 };
 
 export const createFilter = <TFilterKey extends keyof TFilter>(
   args: CreateFilterArgs<TFilterKey>,
 ): string => {
-  const { field, filterKey, value } = args;
+  const { field, filterKey, value, mode } = args;
 
   if (isNull(args) || isUndefined(args) || objectIsEmpty(args)) {
     return '';
   }
 
   if (filterKey === 'contains') {
+    if (mode === 'INSENSITIVE') {
+      return `CONTAINS(LOWER(c.${field}), LOWER('${value}'))`;
+    }
     return `CONTAINS(c.${field}, '${value}')`;
   }
 
   if (filterKey === 'startsWith') {
+    if (mode === 'INSENSITIVE') {
+      return `STARTSWITH(LOWER(c.${field}), LOWER('${value}'))`;
+    }
     return `STARTSWITH(c.${field}, '${value}')`;
   }
 
   if (filterKey === 'endsWith') {
+    if (mode === 'INSENSITIVE') {
+      return `ENDSWITH(LOWER(c.${field}), LOWER('${value}'))`;
+    }
     return `ENDSWITH(c.${field},'${value}')`;
   }
 
@@ -141,6 +152,9 @@ export const buildWhereClause = <T extends Base>(
 
   const conditions: Array<string> = Object.entries(args)
     ?.map(([field, filters]): Array<string> => {
+      const _filters: Pick<TFilter, 'mode'> = filters as Pick<TFilter, 'mode'>;
+      const mode: QueryMode = _filters?.mode ? _filters?.mode : 'SENSITIVE';
+
       const filterQueriesForCurrentField = Object.entries(
         filters as TFilter,
       )?.map(([filterKey, value]): string => {
@@ -148,6 +162,7 @@ export const buildWhereClause = <T extends Base>(
         const filterCondition = createFilter({
           field,
           filterKey: _filterKey,
+          mode,
           value,
         });
         return filterCondition;
@@ -289,8 +304,6 @@ export class BaseModel<T extends Base = typeof initial> {
     const container: Container = this.client;
 
     const query = buildQueryFindMany(args);
-
-    console.log(`QUERY => ${query}`);
 
     const result = await fromPromise<
       FeedResponse<CosmosResource<T>>,
