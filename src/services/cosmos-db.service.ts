@@ -488,7 +488,7 @@ export class BaseModel<T extends Base = typeof initial> {
     );
     if (checkItemInDb.isErr()) {
       throw new Error(
-        `Failed to update item in db. The item you're trying update cannot be found.`,
+        `Failed to update item in db. The item you're trying to update cannot be found.`,
       );
     }
 
@@ -508,6 +508,44 @@ export class BaseModel<T extends Base = typeof initial> {
       throw new Error(message);
     }
     return replaceItem.value?.resource as T;
+  }
+
+  public async delete(args: FindOneArgs<T>): Promise<void> {
+    const { where } = args;
+    const { id } = where;
+
+    const validateId = IdSchema.safeParse(id);
+    if (validateId.success === false) {
+      throw new Error(validateId?.error?.message);
+    }
+
+    // check if item in db
+    const checkItemInDb = await fromPromise(
+      this.findOne<{ id: string }>({
+        where,
+        select: { id: true },
+      }),
+      (e) => e as Error,
+    );
+    if (checkItemInDb.isErr()) {
+      throw new Error(
+        `Failed to delete item in db. The item you're trying to delete cannot be found.`,
+      );
+    }
+
+    // delete item
+    const container: Container = this.client;
+    const deleteItem = await fromPromise(
+      container.item(id, id).delete(),
+      (e) => e as ErrorResponse,
+    );
+
+    if (deleteItem.isErr()) {
+      const message = `Failed to delete item. ${deleteItem.error?.message}`;
+      throw new Error(message);
+    }
+
+    return undefined;
   }
 }
 
