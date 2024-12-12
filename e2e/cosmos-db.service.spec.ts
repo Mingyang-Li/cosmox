@@ -92,9 +92,17 @@ test('Should return x items when requesting x items', async () => {
 test('Should return items that satisfies filters applied', async () => {
   const result = await db.user.findMany({
     where: {
-      lastName: {
-        startsWith: 'a',
+      firstName: {
+        contains: 'name',
       },
+      lastName: {
+        endsWith: 'name1',
+        mode: 'INSENSITIVE',
+      },
+    },
+    select: {
+      firstName: true,
+      lastName: true,
     },
   });
   expect(result.items?.length).toEqual(0);

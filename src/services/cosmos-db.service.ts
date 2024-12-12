@@ -86,8 +86,7 @@ export const createFilter = <TFilterKey extends keyof TFilter>(
 
   if (filterKey === 'endsWith') {
     if (mode === 'INSENSITIVE') {
-      return `ENDSWITH(LOWER(c.${field}), LOWER('${value}'))`;
-      return `LOWER(c.${field}) LIKE LOWER('%${value}')`;
+      return `LOWER(c.${field}) LIKE '%LOWER(${value})'`;
     }
     return `c.${field} LIKE '%${value}'`;
   }
@@ -350,6 +349,8 @@ export class BaseModel<T extends Base = typeof initial> {
     const container: Container = this.client;
 
     const query = buildQueryFindMany(args);
+
+    console.log(`query => ${query}`);
 
     const result = await fromPromise<
       FeedResponse<CosmosResource<T>>,
