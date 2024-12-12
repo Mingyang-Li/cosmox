@@ -7,7 +7,7 @@ import {
   ItemResponse,
 } from '@azure/cosmos';
 import { z } from 'zod';
-import { err, fromPromise } from 'neverthrow';
+import { fromPromise } from 'neverthrow';
 import {
   isArray,
   isBoolean,
@@ -87,8 +87,9 @@ export const createFilter = <TFilterKey extends keyof TFilter>(
   if (filterKey === 'endsWith') {
     if (mode === 'INSENSITIVE') {
       return `ENDSWITH(LOWER(c.${field}), LOWER('${value}'))`;
+      return `LOWER(c.${field}) LIKE LOWER('%${value}')`;
     }
-    return `ENDSWITH(c.${field},'${value}')`;
+    return `c.${field} LIKE '%${value}'`;
   }
 
   if (filterKey === 'equals') {

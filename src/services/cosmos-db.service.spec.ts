@@ -37,7 +37,7 @@ const query = buildQueryFindMany<User>({
   },
 });
 
-test('pass', () => {
+test('pass', async () => {
   console.log(`query => ${query}`);
   expect(true).toEqual(true);
 });

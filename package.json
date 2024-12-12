@@ -3,7 +3,8 @@
   "scripts": {
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
-    "test": "vitest",
+    "test:unit": "vitest --config vitest.config.unit.ts",
+    "test:e2e": "vitest --config vitest.config.e2e.ts",
     "build": "tsup src/index.ts",
     "dev": "tsup src/index.ts --watch",
     "prepare": "husky"
