@@ -350,8 +350,6 @@ export class BaseModel<T extends Base = typeof initial> {
 
     const query = buildQueryFindMany(args);
 
-    console.log(`query => ${query}`);
-
     const result = await fromPromise<
       FeedResponse<CosmosResource<T>>,
       ErrorResponse
