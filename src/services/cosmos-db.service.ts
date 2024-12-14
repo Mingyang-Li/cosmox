@@ -432,7 +432,7 @@ export class BaseModel<T extends Base = typeof initial> {
   /**
    * Create an item
    */
-  public async create(args: CreateArgs<T>): Promise<T> {
+  public async create<T extends Base>(args: CreateArgs<T>): Promise<T> {
     const { data } = args;
 
     if (!isObject(data)) {
@@ -466,7 +466,7 @@ export class BaseModel<T extends Base = typeof initial> {
   /**
    * Update an item
    */
-  public async update(args: UpdateArgs<T>): Promise<T> {
+  public async update<T extends Base>(args: UpdateArgs<T>): Promise<T> {
     const { where, data } = args;
     const { id } = where;
 
@@ -522,7 +522,7 @@ export class BaseModel<T extends Base = typeof initial> {
   /**
    * @warning Permanently delete an item
    */
-  public async delete(args: FindOneArgs<T>): Promise<void> {
+  public async delete(args: Pick<FindOneArgs<T>, 'where'>): Promise<void> {
     const { where } = args;
     const { id } = where;
 
