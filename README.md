@@ -3,8 +3,8 @@
 </p>
 
 <div align="center">
-  <h1>Prismos</h1>
-  <a href="#"><img src="https://img.shields.io/npm/v/prismos.svg?style=flat" /></a>
+  <h1>Cosmox</h1>
+  <a href="#"><img src="https://img.shields.io/npm/v/cosmox.svg?style=flat" /></a>
   <a href="#"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT%202-blue" /></a>
   <br />
@@ -23,7 +23,7 @@ If you're tired of writing raw SQL for querying Azure CosmosDB NoSQL database wi
 - E-commerce
 - IoT dashboard
 
-## 🧠 Why Prismos over `@azure/cosmos`?
+## 🧠 Why Cosmox over `@azure/cosmos`?
 
 - ✅ Type-safe advanced filtering
 - 💪 Build-in SQL query-builder
@@ -35,15 +35,15 @@ If you're tired of writing raw SQL for querying Azure CosmosDB NoSQL database wi
 Install this package
 
 ```shell
-npm install prismos
-yarn install prismos
-pnpm install prismos
+npm install cosmox
+yarn install cosmox
+pnpm install cosmox
 ```
 
 Instantiate the client
 
 ```typescript
-import { createClient } from 'prismos';
+import { createClient } from 'cosmox';
 
 type User = {
   id: string;

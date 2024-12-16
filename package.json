@@ -1,5 +1,5 @@
 {
-  "name": "prismos",
+  "name": "cosmox",
   "version": "1.0.0",
   "keywords": [
     "cosmosdb",
@@ -12,9 +12,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Mingyang-Li/prismos.git"
+    "url": "https://github.com/Mingyang-Li/cosmox.git"
   },
-  "homepage": "https://github.com/Mingyang-Li/prismos#readme",
+  "homepage": "https://github.com/Mingyang-Li/cosmox#readme",
   "scripts": {
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
