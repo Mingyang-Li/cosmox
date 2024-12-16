@@ -3,4 +3,13 @@
 docs
 e2e
 *.env
-*.md
+.gitattributes
+.gitignore
+.npmrc
+.prettierignore
+.prettierrc
+LICENSE
+README.md
+tsup.config.ts
+vitest.config.e2e.ts
+vitest.config.unit.ts
