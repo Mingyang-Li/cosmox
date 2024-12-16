@@ -1,0 +1,6 @@
+.github
+.husky
+docs
+e2e
+*.env
+*.md

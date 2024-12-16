@@ -1,5 +1,6 @@
 {
   "name": "prismos",
+  "version": "1.0.0",
   "keywords": [
     "cosmosdb",
     "prisma",
@@ -7,6 +8,7 @@
     "sdk",
     "nosql"
   ],
+  "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -18,7 +20,7 @@
     "format:write": "prettier --write .",
     "test:unit": "vitest --config vitest.config.unit.ts",
     "test:e2e": "vitest --config vitest.config.e2e.ts",
-    "build": "tsup src/index.ts",
+    "build": "tsup --dts",
     "dev": "tsup src/index.ts --watch",
     "prepare": "husky"
   },
