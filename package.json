@@ -1,5 +1,18 @@
 {
   "name": "prismos",
+  "keywords": [
+    "cosmosdb",
+    "prisma",
+    "orm",
+    "sdk",
+    "nosql"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mingyang-Li/prismos.git"
+  },
+  "homepage": "https://github.com/Mingyang-Li/prismos#readme",
   "scripts": {
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
@@ -24,8 +37,6 @@
       }
     }
   },
-  "keywords": [],
-  "license": "MIT",
   "packageManager": "pnpm@9.8.10",
   "dependencies": {
     "@azure/cosmos": "4.2.0",

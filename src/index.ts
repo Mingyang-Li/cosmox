@@ -1,3 +1,12 @@
-export const greet = (name: string) => `hello ${name}`;
-
-export const bye = (name: string) => `bye ${name}`;
+export {
+  createClient,
+  buildQueryFindMany,
+  buildQueryFindOne,
+  FindManyArgs,
+  FindManyResponse,
+  FindOneArgs,
+  CreateArgs,
+  UpdateArgs,
+  TFilter,
+} from '@/services/cosmos-db.service';
+export * from '@/types/filters';

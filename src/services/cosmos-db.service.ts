@@ -50,7 +50,13 @@ export const constructFieldSelection = <T extends Base>(
   }
 
   return Object.keys(args)
-    ?.map((key) => `c.${key}`)
+    ?.map((key) => {
+      if (args[key as keyof FindManyArgs<T>['select']] === true) {
+        return `c.${key}`;
+      }
+      return ``;
+    })
+    ?.filter((item) => isNonEmptyString(item))
     ?.join(', ');
 };
 
@@ -257,7 +263,7 @@ interface AutoFields {
   timestamp?: boolean;
 }
 
-export interface ModelOptions {
+export type ModelOptions = {
   /** The name of the Cosmos database */
   database: string;
   /** The name of the Cosmos container within the database */
@@ -268,7 +274,7 @@ export interface ModelOptions {
   connectionStringSetting?: string;
   /** Automatic fields creation - defaults to true */
   fields?: AutoFields | boolean;
-}
+};
 
 const initial = {};
 
@@ -278,7 +284,7 @@ const defaultFields: AutoFields = {
 };
 
 /** Utility type to define where clause filters */
-type Where<T extends Base> = {
+export type Where<T extends Base> = {
   [K in keyof T]?: T[K] extends string
     ? StringFilter
     : T[K] extends number
@@ -357,7 +363,7 @@ export class BaseModel<T extends Base = typeof initial> {
       container.items
         .query(query, {
           continuationToken: nextCursor,
-          maxItemCount: take,
+          maxItemCount: take ?? 100,
         })
         .fetchNext(),
       (e) => e as ErrorResponse,
