@@ -1,5 +1,9 @@
 name: Test - E2E
 
+on:
+  pull_request:
+    branches: []
+
 env:
   PNPM_VERSION: 9.7.1
   NODE_VERSION: 20.x
