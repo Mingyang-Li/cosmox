@@ -11,7 +11,7 @@
   <br />
 </div>
 
-> This is a type-safe ORM for Azure CosmosDB NoSQL, inpired by Prisma
+> This is a type-safe ORM for Azure CosmosDB NoSQL, inpired by [Prisma.io](https://www.prisma.io/)
 
 This package is for you if you're building data-driven applications and you're using Azure CosmosDB NoSQL as the main database.
 
@@ -193,3 +193,10 @@ const result = orm.user.delete({
   where: { id: '<USER_ID>' },
 });
 ```
+
+## 😀 Roadmap
+
+- ~~Core Query builder~~
+- Bulk create / update operations
+- Observability - query logging
+- Filtering complex data types such as string arrays & number arrays
