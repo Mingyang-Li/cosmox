@@ -199,4 +199,4 @@ const result = orm.user.delete({
 - ~~Core Query builder~~
 - Bulk create / update operations
 - Observability - query logging
-- Filtering complex data types such as string arrays & number arrays
+- Filtering on more complex data types such as enums, enum arrays, string arrays & number arrays
