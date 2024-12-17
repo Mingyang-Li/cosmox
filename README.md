@@ -17,6 +17,11 @@ This package is for you if you're building data-driven applications and you're u
 
 If you're tired of writing raw SQL for querying Azure CosmosDB NoSQL database with complex filters, then this package is for you, too.
 
+<p align="center">
+  <img src="docs/demo.gif" />
+  The code above gives you query auto-completion based on the data model you specified for each container in Azure CosmosDB
+</p>
+
 ## 🤔 Use cases:
 
 - Data analytics dashboard
