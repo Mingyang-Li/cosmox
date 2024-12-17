@@ -285,13 +285,13 @@ const defaultFields: AutoFields = {
 
 /** Utility type to define where clause filters */
 export type Where<T extends Base> = {
-  [K in keyof T]?: T[K] extends string
+  [K in keyof T]?: T[K] extends string | undefined
     ? StringFilter
-    : T[K] extends number
+    : T[K] extends number | undefined
       ? NumberFilter
-      : T[K] extends boolean
+      : T[K] extends boolean | undefined
         ? BooleanFilter
-        : T[K] extends Date
+        : T[K] extends Date | undefined
           ? DateFilter
           : never;
 };
@@ -340,7 +340,9 @@ export class BaseModel<T extends Base = typeof initial> {
   }
 
   /** Find many items with pagination and type-safe filters */
-  public async findMany(args: FindManyArgs<T>): Promise<FindManyResponse<T>> {
+  public async findMany(
+    args: FindManyArgs<Required<T>>,
+  ): Promise<FindManyResponse<T>> {
     const { take, nextCursor } = args;
 
     // validate "take" if provided by user
