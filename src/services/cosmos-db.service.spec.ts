@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   FindManyArgs,
+  FindOneArgs,
   Where,
   buildQueryFindMany,
+  buildQueryFindOne,
   buildWhereClause,
   constructFieldSelection,
   constructOrderByClause,
@@ -202,5 +204,47 @@ describe(buildQueryFindMany.name, () => {
 
     const result = buildQueryFindMany(args);
     expect(result).toBe('SELECT * FROM c');
+  });
+});
+
+describe(buildQueryFindOne.name, () => {
+  it('should construct a query with only the ID in the where clause', () => {
+    const args: FindOneArgs<User> = {
+      where: { id: '123' },
+    };
+
+    const result = buildQueryFindOne(args);
+    expect(result).toBe("SELECT * FROM c WHERE c.id = '123'");
+  });
+
+  it('should construct a query with selected fields', () => {
+    const args: FindOneArgs<User> = {
+      where: { id: '123' },
+      select: { firstName: true, lastName: true },
+    };
+
+    const result = buildQueryFindOne(args);
+    expect(result).toBe(
+      "SELECT c.firstName, c.lastName FROM c WHERE c.id = '123'",
+    );
+  });
+
+  it('should handle an empty select object by selecting all fields', () => {
+    const args: FindOneArgs<User> = {
+      where: { id: '123' },
+      select: {},
+    };
+
+    const result = buildQueryFindOne(args);
+    expect(result).toBe("SELECT * FROM c WHERE c.id = '123'");
+  });
+
+  it('should handle undefined select by selecting all fields', () => {
+    const args: FindOneArgs<User> = {
+      where: { id: '123' },
+    };
+
+    const result = buildQueryFindOne(args);
+    expect(result).toBe("SELECT * FROM c WHERE c.id = '123'");
   });
 });
