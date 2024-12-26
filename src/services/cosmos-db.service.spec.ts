@@ -1,5 +1,9 @@
-import { expect, test } from 'vitest';
-import { buildQueryFindMany } from './cosmos-db.service';
+import { describe, expect, it } from 'vitest';
+import {
+  FindManyArgs,
+  buildQueryFindMany,
+  constructFieldSelection,
+} from './cosmos-db.service';
 
 type User = {
   firstName: string;
@@ -37,7 +41,49 @@ const query = buildQueryFindMany<User>({
   },
 });
 
-test('pass', async () => {
+it('pass', async () => {
   console.log(`query => ${query}`);
   expect(true).toEqual(true);
+});
+
+describe(constructFieldSelection.name, () => {
+  it('should return "*" when select object is undefined', () => {
+    const result = constructFieldSelection(undefined);
+    expect(result).toBe('*');
+  });
+
+  it('should return "*" when select object is empty', () => {
+    const result = constructFieldSelection({});
+    expect(result).toBe('*');
+  });
+
+  it('should return correct fields when some fields are selected', () => {
+    const select: FindManyArgs<User>['select'] = {
+      firstName: true,
+      lastName: true,
+      age: false,
+    };
+    const result = constructFieldSelection(select);
+    expect(result).toBe('c.firstName, c.lastName');
+  });
+
+  it('should return all fields when all fields are selected', () => {
+    const select: FindManyArgs<User>['select'] = {
+      firstName: true,
+      lastName: true,
+      age: true,
+    };
+    const result = constructFieldSelection(select);
+    expect(result).toBe('c.firstName, c.lastName, c.age');
+  });
+
+  it('should return empty string when no fields are selected', () => {
+    const select: FindManyArgs<{}>['select'] = {
+      firstName: false,
+      lastName: false,
+      age: false,
+    };
+    const result = constructFieldSelection(select);
+    expect(result).toBe('*');
+  });
 });

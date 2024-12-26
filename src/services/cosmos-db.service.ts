@@ -42,6 +42,9 @@ export const IdSchema = z
     },
   );
 
+/**
+ * Determines which columns to retrieve from CosmosDB
+ */
 export const constructFieldSelection = <T extends Base>(
   args?: FindManyArgs<T>['select'],
 ): string => {
@@ -49,15 +52,14 @@ export const constructFieldSelection = <T extends Base>(
     return '*';
   }
 
-  return Object.keys(args)
-    ?.map((key) => {
-      if (args[key as keyof FindManyArgs<T>['select']] === true) {
-        return `c.${key}`;
-      }
-      return ``;
-    })
-    ?.filter((item) => isNonEmptyString(item))
-    ?.join(', ');
+  const fieldsSelected = Object.keys(args)?.filter(
+    (key) => args[key as keyof FindManyArgs<T>['select']] === true,
+  );
+  if (isEmptyArray(fieldsSelected)) {
+    return '*';
+  }
+
+  return fieldsSelected?.map((key) => `c.${key}`)?.join(', ');
 };
 
 type CreateFilterArgs<TFilterKey extends keyof TFilter> = {
@@ -541,7 +543,7 @@ export class BaseModel<T extends Base = typeof initial> {
 
     // check if item in db
     const checkItemInDb = await fromPromise(
-      this.findOne<{ id: string }>({
+      this.findOne<FindOneArgs<T>['where']>({
         where,
         select: { id: true },
       }),
