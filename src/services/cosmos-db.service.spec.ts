@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   FindManyArgs,
-  buildQueryFindMany,
+  Where,
+  buildWhereClause,
   constructFieldSelection,
 } from './cosmos-db.service';
 
@@ -12,39 +13,6 @@ type User = {
   createdAt: Date;
   isSuperAdmin: boolean;
 };
-
-const query = buildQueryFindMany<User>({
-  where: {
-    isSuperAdmin: {
-      not: true,
-    },
-    firstName: {
-      startsWith: 'haha',
-      endsWith: 'hEEh',
-      mode: 'INSENSITIVE',
-    },
-    lastName: {
-      equals: 'hehe',
-    },
-    age: {
-      lte: 10,
-      notIn: [1, 2, 3],
-    },
-  },
-  select: {
-    firstName: true,
-    lastName: true,
-  },
-  orderBy: {
-    lastName: 'ASC',
-    firstName: 'DESC',
-  },
-});
-
-it('pass', async () => {
-  console.log(`query => ${query}`);
-  expect(true).toEqual(true);
-});
 
 describe(constructFieldSelection.name, () => {
   it('should return "*" when select object is undefined', () => {
@@ -85,5 +53,55 @@ describe(constructFieldSelection.name, () => {
     };
     const result = constructFieldSelection(select);
     expect(result).toBe('*');
+  });
+});
+
+describe(buildWhereClause.name, () => {
+  it('should return an empty string when where clause is undefined', () => {
+    const result = buildWhereClause<User>(undefined);
+    expect(result).toBe('');
+  });
+
+  it('should return an empty string when where clause is empty', () => {
+    const result = buildWhereClause<User>({});
+    expect(result).toBe('');
+  });
+
+  it('should construct a complex where clause with mixed conditions', () => {
+    const where: Where<User> = {
+      firstName: { startsWith: 'haha', endsWith: 'hEEh', mode: 'INSENSITIVE' },
+      lastName: { equals: 'hehe' },
+      age: { lte: 10, notIn: [1, 2, 3] },
+      isSuperAdmin: { not: true },
+    };
+
+    const result = buildWhereClause(where);
+    expect(result).toBe(
+      "WHERE STARTSWITH(LOWER(c.firstName), LOWER('haha')) AND LOWER(c.firstName) LIKE '%LOWER('hEEh')' AND c.lastName = 'hehe' AND c.age <= 10 AND c.age NOT IN (1, 2, 3) AND c.isSuperAdmin != true",
+    );
+  });
+
+  it('should handle case-sensitive and case-insensitive conditions', () => {
+    const where: Where<User> = {
+      firstName: { startsWith: 'A', mode: 'SENSITIVE' },
+      lastName: { endsWith: 'z', mode: 'INSENSITIVE' },
+    };
+
+    const result = buildWhereClause(where);
+    expect(result).toBe(
+      "WHERE STARTSWITH(c.firstName, 'A') AND LOWER(c.lastName) LIKE '%LOWER('z')'",
+    );
+  });
+
+  it('should handle "in" and "notIn" conditions', () => {
+    const where: Where<User> = {
+      age: { in: [25, 30, 35] },
+      firstName: { notIn: ['Alice', 'Bob'] },
+    };
+
+    const result = buildWhereClause(where);
+    expect(result).toBe(
+      "WHERE c.age IN (25, 30, 35) AND c.firstName NOT IN ('Alice', 'Bob')",
+    );
   });
 });

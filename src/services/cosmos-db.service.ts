@@ -69,6 +69,9 @@ type CreateFilterArgs<TFilterKey extends keyof TFilter> = {
   value: unknown;
 };
 
+/**
+ * Given a condition, determines the SQL filtering query
+ */
 export const createFilter = <TFilterKey extends keyof TFilter>(
   args: CreateFilterArgs<TFilterKey>,
 ): string => {
@@ -94,7 +97,7 @@ export const createFilter = <TFilterKey extends keyof TFilter>(
 
   if (filterKey === 'endsWith') {
     if (mode === 'INSENSITIVE') {
-      return `LOWER(c.${field}) LIKE '%LOWER(${value})'`;
+      return `LOWER(c.${field}) LIKE '%LOWER('${value}')'`;
     }
     return `c.${field} LIKE '%${value}'`;
   }
@@ -149,7 +152,7 @@ export const createFilter = <TFilterKey extends keyof TFilter>(
         }
         return `'${v}'`;
       })
-      .join(',')})`;
+      .join(', ')})`;
   }
 
   if (filterKey === 'notIn') {
@@ -160,12 +163,15 @@ export const createFilter = <TFilterKey extends keyof TFilter>(
         }
         return `'${v}'`;
       })
-      .join(',')})`;
+      .join(', ')})`;
   }
 
   return '';
 };
 
+/**
+ * Constructs the "where" clause section of CosmosDB SQL query
+ */
 export const buildWhereClause = <T extends Base>(
   args: FindManyArgs<T>['where'],
 ): string => {
