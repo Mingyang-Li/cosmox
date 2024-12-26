@@ -4,6 +4,7 @@ import {
   Where,
   buildWhereClause,
   constructFieldSelection,
+  constructOrderByClause,
 } from './cosmos-db.service';
 
 type User = {
@@ -103,5 +104,46 @@ describe(buildWhereClause.name, () => {
     expect(result).toBe(
       "WHERE c.age IN (25, 30, 35) AND c.firstName NOT IN ('Alice', 'Bob')",
     );
+  });
+});
+
+describe(constructOrderByClause.name, () => {
+  it('should return an empty string when orderBy is undefined', () => {
+    const result = constructOrderByClause<User>(undefined);
+    expect(result).toBe('');
+  });
+
+  it('should return an empty string when orderBy is empty', () => {
+    const result = constructOrderByClause<User>({});
+    expect(result).toBe('');
+  });
+
+  it('should construct an ORDER BY clause for a single field', () => {
+    const orderBy: FindManyArgs<User>['orderBy'] = {
+      age: 'ASC',
+    };
+
+    const result = constructOrderByClause(orderBy);
+    expect(result).toBe('ORDER BY c.age ASC');
+  });
+
+  it('should construct an ORDER BY clause for multiple fields', () => {
+    const orderBy: FindManyArgs<User>['orderBy'] = {
+      lastName: 'DESC',
+      firstName: 'ASC',
+    };
+
+    const result = constructOrderByClause(orderBy);
+    expect(result).toBe('ORDER BY c.lastName DESC, c.firstName ASC');
+  });
+
+  it('should handle mixed case directions', () => {
+    const orderBy: FindManyArgs<User>['orderBy'] = {
+      createdAt: 'DESC',
+      isSuperAdmin: 'ASC',
+    };
+
+    const result = constructOrderByClause(orderBy);
+    expect(result).toBe('ORDER BY c.createdAt DESC, c.isSuperAdmin ASC');
   });
 });
