@@ -12,6 +12,7 @@ export const StringFilterSchema = z
     startsWith: z.string().optional(),
     endsWith: z.string().optional(),
     not: z.string().optional(),
+    notIn: z.array(z.string()).optional(),
     mode: QueryModeSchema.optional(),
   })
   .strict();

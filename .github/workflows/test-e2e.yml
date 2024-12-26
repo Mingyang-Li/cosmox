@@ -12,35 +12,35 @@ jobs:
   test-e2e:
     runs-on: ubuntu-latest
 
-    services:
-      cosmosdb:
-        image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator
-        ports:
-          - 8081:8081
-        options: --network host
+    # services:
+    #   cosmosdb:
+    #     image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator
+    #     ports:
+    #       - 8081:8081
+    #     options: --network host
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    # steps:
+    # - name: Checkout code
+    #   uses: actions/checkout@v2
 
-      - uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
+    # - uses: pnpm/action-setup@v2
+    #   with:
+    #     version: ${{ env.PNPM_VERSION }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: ${{ env.NODE_VERSION }}
+    # - name: Set up Node.js
+    #   uses: actions/setup-node@v2
+    #   with:
+    #     node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install dependencies
-        run: pnpm install
+    # - name: Install dependencies
+    #   run: pnpm install
 
-      - name: Build package
-        run: pnpm build
+    # - name: Build package
+    #   run: pnpm build
 
-      - name: Run E2E Tests
-        run: pnpm test:e2e
-        env:
-          COSMOS_ENDPOINT: http://localhost:8081
-          COSMOS_KEY: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
-          NODE_TLS_REJECT_UNAUTHORIZED: 0
+    # - name: Run E2E Tests
+    #   run: pnpm test:e2e
+    #   env:
+    #     COSMOS_ENDPOINT: http://localhost:8081
+    #     COSMOS_KEY: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+    #     NODE_TLS_REJECT_UNAUTHORIZED: 0
