@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   FindManyArgs,
   Where,
+  buildQueryFindMany,
   buildWhereClause,
   constructFieldSelection,
   constructOrderByClause,
@@ -145,5 +146,61 @@ describe(constructOrderByClause.name, () => {
 
     const result = constructOrderByClause(orderBy);
     expect(result).toBe('ORDER BY c.createdAt DESC, c.isSuperAdmin ASC');
+  });
+});
+
+describe(buildQueryFindMany.name, () => {
+  it('should construct a query with only select fields', () => {
+    const args: FindManyArgs<User> = {
+      select: { firstName: true, lastName: true },
+    };
+
+    const result = buildQueryFindMany(args);
+    expect(result).toBe('SELECT c.firstName, c.lastName FROM c');
+  });
+
+  it('should construct a query with where clause', () => {
+    const args: FindManyArgs<User> = {
+      where: {
+        age: { gt: 30 },
+        isSuperAdmin: { equals: true },
+      },
+    };
+
+    const result = buildQueryFindMany(args);
+    expect(result).toBe(
+      'SELECT * FROM c WHERE c.age > 30 AND c.isSuperAdmin = true',
+    );
+  });
+
+  it('should construct a query with order by clause', () => {
+    const args: FindManyArgs<User> = {
+      orderBy: { createdAt: 'DESC' },
+    };
+
+    const result = buildQueryFindMany(args);
+    expect(result).toBe('SELECT * FROM c ORDER BY c.createdAt DESC');
+  });
+
+  it('should construct a query with select, where, and order by clauses', () => {
+    const args: FindManyArgs<User> = {
+      select: { firstName: true, lastName: true },
+      where: {
+        age: { lte: 50 },
+      },
+      orderBy: { createdAt: 'ASC' },
+    };
+
+    const result = buildQueryFindMany(args);
+    expect(result).toBe(
+      'SELECT c.firstName, c.lastName FROM c WHERE c.age <= 50 ORDER BY c.createdAt ASC',
+    );
+  });
+
+  it('should handle empty args gracefully', () => {
+    const args: FindManyArgs<User> = {};
+
+    const result = buildQueryFindMany(args);
+    expect(result).toBe('SELECT * FROM c');
   });
 });
