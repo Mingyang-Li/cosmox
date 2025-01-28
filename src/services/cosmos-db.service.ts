@@ -5,6 +5,7 @@ import {
   FeedResponse,
   ErrorResponse,
   ItemResponse,
+  CosmosClientOptions,
 } from '@azure/cosmos';
 import { z } from 'zod';
 import { fromPromise } from 'neverthrow';
@@ -278,8 +279,6 @@ export type ModelOptions = {
   container: string;
   /** The instantiated Cosmos client */
   client: CosmosClient;
-  /** The name of the env of the Cosmos connection string - defaults to `COSMOS_CONNECTION_STRING` */
-  connectionStringSetting?: string;
   /** Automatic fields creation - defaults to true */
   fields?: AutoFields | boolean;
 };
@@ -334,14 +333,9 @@ export type UpdateArgs<T extends Base> = {
 /** BaseModel class for querying CosmosDB */
 export class BaseModel<T extends Base = typeof initial> {
   client: Container;
-  connectionStringSetting = 'COSMOS_CONNECTION_STRING';
   fields: AutoFields = { ...defaultFields };
 
   constructor(private readonly options: ModelOptions) {
-    if (options.connectionStringSetting) {
-      this.connectionStringSetting = options.connectionStringSetting;
-    }
-
     this.client = options.client
       .database(options.database)
       .container(options.container);
@@ -593,6 +587,10 @@ export interface Options<M extends { [K: string]: BaseModel }> {
    * The Cosmos connection string
    */
   connectionString?: string;
+  /**
+   * The Cosmos Client Options
+   */
+  cosmosClientOptions?: CosmosClientOptions;
   /** A list of the models to create, and their container names. */
   models: (builder: Builder) => M;
 }
@@ -604,8 +602,12 @@ export type DB<M extends Record<string, BaseModel>> = ReturnType<
 export const createClient = <M extends Record<string, BaseModel>>(
   options: Options<M>,
 ): DB<M> => {
-  const client = new CosmosClient(options?.connectionString ?? '');
-
+  let client: CosmosClient;
+  if (options?.cosmosClientOptions) {
+    client = new CosmosClient(options?.cosmosClientOptions);
+  } else {
+    client = new CosmosClient(options?.connectionString ?? '');
+  }
   const builder: Builder = {
     createModel: (args: { container: string }) => {
       const { container } = args;
