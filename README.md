@@ -66,9 +66,22 @@ type Post = {
   createdBy: string; // foreign key - User.id
 };
 
+// Example 1 - Using connectionString
 const orm = createClient({
   database: '<DATABASE_ID>',
   connectionString: '<DB_CONNECTION_STRING>',
+  models: (t) => ({
+    user: t.createModel<User>({ container: '<USER_CONTAINER_ID>' }),
+    post: t.createModel<Post>({ container: '<POST_CONTAINER_ID>' }),
+  }),
+});
+
+// Example 2 - Using cosmosClientOptions
+const orm = createClient({
+  database: '<DATABASE_ID>',
+  cosmosClientOptions: {
+    endpoint: '<EXAMPLE_ENDPOINT>',
+  },
   models: (t) => ({
     user: t.createModel<User>({ container: '<USER_CONTAINER_ID>' }),
     post: t.createModel<Post>({ container: '<POST_CONTAINER_ID>' }),
