@@ -66,7 +66,7 @@ type Post = {
   createdBy: string; // foreign key - User.id
 };
 
-// Example 1 - Using connectionString
+// Example 1 - Using connection string
 const orm = createClient({
   database: '<DATABASE_ID>',
   connectionString: '<DB_CONNECTION_STRING>',
@@ -76,9 +76,10 @@ const orm = createClient({
   }),
 });
 
-// Example 2 - Using cosmosClientOptions
+// Example 2 - Using CosmosDB client options
 const orm = createClient({
   database: '<DATABASE_ID>',
+  // same type-definition as "CosmosClientOptions" from "@azure/cosmos"
   cosmosClientOptions: {
     endpoint: '<EXAMPLE_ENDPOINT>',
   },
