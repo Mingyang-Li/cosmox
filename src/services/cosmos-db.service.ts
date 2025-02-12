@@ -377,10 +377,13 @@ export class BaseModel<T extends Base = typeof initial> {
       throw new Error(message);
     }
 
-    const { resources, continuationToken } = result.value;
+    let { resources, continuationToken } = result.value;
     if (isArray<T>(resources) === false) {
-      const message = `Retrieved data from db, but received ${typeof resources} instead of a list of items`;
-      throw new Error(message);
+      if (resources === undefined) resources = [] as unknown as T[];
+      else {
+        const message = `Retrieved data from db, but received ${typeof resources} instead of a list of items`;
+        throw new Error(message);
+      }
     }
 
     const response: FindManyResponse<T> = {
