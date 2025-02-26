@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  BaseModel,
   FindManyArgs,
   FindOneArgs,
   Where,
@@ -9,6 +10,7 @@ import {
   constructFieldSelection,
   constructOrderByClause,
 } from './cosmos-db.service';
+import { CosmosClient } from '@azure/cosmos';
 
 type User = {
   firstName: string;
@@ -246,5 +248,97 @@ describe(buildQueryFindOne.name, () => {
 
     const result = buildQueryFindOne(args);
     expect(result).toBe("SELECT * FROM c WHERE c.id = '123'");
+  });
+});
+
+type MethodNames<T> = {
+  [K in keyof T]: T[K] extends Function ? K : never;
+}[keyof T];
+
+// Function to get the method name
+const getMethodName = <T>(methodName: MethodNames<T>): string => {
+  return methodName as string;
+};
+
+describe(BaseModel.name, () => {
+  // mock CosmosClient globally, then re-mock it for ease test-case
+  vi.mock('@azure/cosmos', () => ({
+    CosmosClient: vi.fn().mockImplementation(() => ({
+      database: () => ({
+        container: () => ({
+          items: {
+            query: () => ({
+              fetchNext: vi.fn().mockResolvedValue({
+                resources: [], // default mocked value
+              }),
+            }),
+          },
+        }),
+      }),
+    })),
+  }));
+
+  describe(getMethodName<BaseModel>('findMany'), () => {
+    it('Should return [] when resources is [] (empty array)', async () => {
+      const baseModel = new BaseModel({
+        client: new CosmosClient(''),
+        database: '',
+        container: '',
+      });
+
+      const result = await baseModel.findMany({});
+      expect(result.items).toEqual([]);
+    });
+
+    it('Should return [] when resources is undefined', async () => {
+      // mock
+      vi.mocked(CosmosClient as any).mockImplementationOnce(() => ({
+        database: () => ({
+          container: () => ({
+            items: {
+              query: () => ({
+                fetchNext: vi.fn().mockResolvedValue({
+                  resources: undefined,
+                }),
+              }),
+            },
+          }),
+        }),
+      }));
+
+      const baseModel = new BaseModel({
+        client: new CosmosClient(''),
+        database: '',
+        container: '',
+      });
+
+      const result = await baseModel.findMany({});
+      expect(result.items).toEqual([]);
+    });
+
+    it('Should throw error when resources is null', async () => {
+      // mock
+      vi.mocked(CosmosClient as any).mockImplementationOnce(() => ({
+        database: () => ({
+          container: () => ({
+            items: {
+              query: () => ({
+                fetchNext: vi.fn().mockResolvedValue({
+                  resources: null,
+                }),
+              }),
+            },
+          }),
+        }),
+      }));
+
+      const baseModel = new BaseModel({
+        client: new CosmosClient(''),
+        database: '',
+        container: '',
+      });
+
+      await expect(baseModel.findMany({})).rejects.toThrowError();
+    });
   });
 });
