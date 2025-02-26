@@ -378,8 +378,17 @@ export class BaseModel<T extends Base = typeof initial> {
     }
 
     const { resources, continuationToken } = result.value;
-    if (isArray<T>(resources) === false) {
-      const message = `Retrieved data from db, but received ${typeof resources} instead of a list of items`;
+
+    if (isUndefined(resources)) {
+      const response: FindManyResponse<T> = {
+        items: [],
+        nextCursor: continuationToken,
+      };
+      return response;
+    }
+
+    if (!isArray(resources)) {
+      const message = `Retrieved data from db, but received "${typeof resources}" instead of a list of items`;
       throw new Error(message);
     }
 
