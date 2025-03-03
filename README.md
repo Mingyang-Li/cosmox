@@ -11,7 +11,7 @@
   <br />
 </div>
 
-> This is a type-safe ORM for Azure CosmosDB NoSQL, inpired by [Prisma.io](https://www.prisma.io/)
+> This is a type-safe ORM for Azure CosmosDB NoSQL, inspired by [Prisma.io](https://www.prisma.io/)
 
 This package is for you if you're building data-driven applications and you're using Azure CosmosDB NoSQL as the main database.
 
