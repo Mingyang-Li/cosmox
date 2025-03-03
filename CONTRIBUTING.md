@@ -16,7 +16,7 @@ The following steps will get you setup to contribute changes to this repo:
 
 2. Clone your forked repo
 
-3. Make sure you have the matchig version of `pnpm` installed by running `pnpm --version`. Currently, we're on `9.8.10`
+3. Make sure you have the matching version of `pnpm` installed by running `pnpm --version`. Currently, we're on `9.8.10`
 
 4. Run `pnpm` to install dependencies.
 
