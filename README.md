@@ -251,3 +251,11 @@ const result = orm.user.delete({
 - Bulk create / update operations
 - Observability - query logging
 - Filtering on more complex data types such as: composite types, enums, enum arrays, string arrays & number arrays
+
+## Contributing
+
+We're building Cosmox to make CosmosDB more accessible for TypeScript developers, and we welcome contributions passionate about improving the developer experience — whether you're a CosmosDB user, a TypeScript enthusiast, a Prisma user, or part of the broader database community.
+
+## Disclaimer
+
+This project is not an official **Azure** nor **Prisma** product. Provided "as is" without warranty.
