@@ -11,11 +11,21 @@
   <br />
 </div>
 
-> This is a type-safe ORM for Azure CosmosDB NoSQL, inspired by [Prisma.io](https://www.prisma.io/)
+> Cosmox is the missing ORM layer for CosmosDB — Type-safe, developer-friendly, and 10x faster than Microsoft's `azure/cosmos` SDK.
 
-This package is for you if you're building data-driven applications and you're using Azure CosmosDB NoSQL as the main database.
+Have you been searching for a **Prisma-style ORM for CosmosDB**?
 
-If you're tired of writing raw SQL for querying Azure CosmosDB NoSQL database with complex filters, then this package is for you, too.
+Are you still writing raw SQL for querying your CosmosDB?
+
+Are you still writing hard-coded API endpoints to apply filtering on your data?
+
+Are you still wrestling in a world without a proper, type-safe ORM for CosmosDB in Node.js?
+
+If you answered "yes" to any of the questions above, you've come to the right place!
+
+Cosmox is built for developers building data-driven applications on Azure CosmosDB NoSQL, offering a modern, type-safe abstraction over the `@azure/cosmos` SDK — without sacrificing performance.
+
+If you're tired of writing raw SQL queries with complex filters or managing inconsistent JSON responses, Cosmox is your new best friend.
 
 <p align="center">
   <img src="docs/demo.gif" />
@@ -24,16 +34,27 @@ If you're tired of writing raw SQL for querying Azure CosmosDB NoSQL database wi
 
 ## 🤔 Use cases:
 
-- Data analytics dashboard
-- E-commerce
-- IoT dashboard
+- Data analytics dashboards
+- E-commerce applications
+- IoT telemetry processing
+- Multi-tenant SaaS applications
+- Internal admin panels
 
 ## 🧠 Why Cosmox over `@azure/cosmos`?
 
-- ✅ Type-safe advanced filtering
-- 💪 Build-in SQL query-builder
-- 🚀 Dynamic, type-safe field-selection - maximizing performance
-- 🍃 No more hard-coding SQL queries, just bring your models
+| Features                                    | Cosmox | @azure/cosmos |
+| ------------------------------------------- | ------ | ------------- |
+| CRUD                                        | ✅     | ✅            |
+| Type-safe queries                           | ✅     | ❌            |
+| Powerful, type-safe filtering               | ✅     | ❌            |
+| Dynamic, type-safe field selection          | ✅     | ❌            |
+| Built-in type-safe SQL query builder        | ✅     | ❌            |
+| Generates accurate & performant SQL queries | ✅     | ❌            |
+| Generates paginated queries by default      | ✅     | ❌            |
+| Built-in input-validations                  | ✅     | ❌            |
+| Prisma-like developer experience            | ✅     | ❌            |
+| Meaningful, actionable error messages       | ✅     | ❌            |
+| Small bundle size                           | ✅     | ❌            |
 
 ## 🚶‍♂️ How to get started?
 
@@ -45,11 +66,9 @@ yarn install cosmox
 pnpm install cosmox
 ```
 
-Instantiate the client
+Define pure TypeScript as models for your containers
 
-```typescript
-import { createClient } from 'cosmox';
-
+```ts
 type User = {
   id: string;
   firstName: string;
@@ -65,12 +84,19 @@ type Post = {
   content: string;
   createdBy: string; // foreign key - User.id
 };
+```
+
+Instantiate the client
+
+```ts
+import { createClient } from 'cosmox';
 
 // Example 1 - Using connection string
 const orm = createClient({
   database: '<DATABASE_ID>',
   connectionString: '<DB_CONNECTION_STRING>',
   models: (t) => ({
+    // infer your types as the models for your containers during initialization
     user: t.createModel<User>({ container: '<USER_CONTAINER_ID>' }),
     post: t.createModel<Post>({ container: '<POST_CONTAINER_ID>' }),
   }),
@@ -89,6 +115,10 @@ const orm = createClient({
   }),
 });
 ```
+
+✨ Done! You can now start to query CosmosDB using the ORM.
+
+## 📚 Examples:
 
 Make queries with simple filters
 
@@ -216,6 +246,7 @@ const result = orm.user.delete({
 ## 😀 Roadmap
 
 - ~~Core Query builder~~
+- Audit fields configuration (system fields) such as `createdAt`, `updatedAt`, `archivedAt`, etc
 - Bulk create / update operations
 - Observability - query logging
-- Filtering on more complex data types such as enums, enum arrays, string arrays & number arrays
+- Filtering on more complex data types such as: composite types, enums, enum arrays, string arrays & number arrays
