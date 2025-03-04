@@ -11,7 +11,7 @@
   <br />
 </div>
 
-> Cosmox is the missing ORM layer for CosmosDB — Type-safe, developer-friendly, and 10x faster than Microsoft's `azure/cosmos` SDK.
+> Cosmox is the missing ORM layer for CosmosDB — Type-safe, developer-friendly, designed to simplify data access and boost performance for TypeScript developers.
 
 Have you been searching for a **Prisma-style ORM for CosmosDB**?
 
@@ -27,6 +27,8 @@ Cosmox is built for developers building data-driven applications on Azure Cosmos
 
 If you're tired of writing raw SQL queries with complex filters or managing inconsistent JSON responses, Cosmox is your new best friend.
 
+> Cosmox is not a replacement for @azure/cosmos — It's a lightweight abstraction built to make CosmosDB more accessible and type-safe for TypeScript developers.
+
 <p align="center">
   <img src="docs/demo.gif" />
   The code above gives you query auto-completion based on the data model you specified for each container in Azure CosmosDB
@@ -40,21 +42,20 @@ If you're tired of writing raw SQL queries with complex filters or managing inco
 - Multi-tenant SaaS applications
 - Internal admin panels
 
-## 🧠 Why Cosmox over `@azure/cosmos`?
+## 🧠 Let's compare `cosmox` with `@azure/cosmos`
 
-| Features                                    | Cosmox | @azure/cosmos |
-| ------------------------------------------- | ------ | ------------- |
-| CRUD                                        | ✅     | ✅            |
-| Type-safe queries                           | ✅     | ❌            |
-| Powerful, type-safe filtering               | ✅     | ❌            |
-| Dynamic, type-safe field selection          | ✅     | ❌            |
-| Built-in type-safe SQL query builder        | ✅     | ❌            |
-| Generates accurate & performant SQL queries | ✅     | ❌            |
-| Generates paginated queries by default      | ✅     | ❌            |
-| Built-in input-validations                  | ✅     | ❌            |
-| Prisma-like developer experience            | ✅     | ❌            |
-| Meaningful, actionable error messages       | ✅     | ❌            |
-| Small bundle size                           | ✅     | ❌            |
+| Features                       | `cosmox`                        | `@azure/cosmos`                   |
+| ------------------------------ | ------------------------------- | --------------------------------- |
+| CRUD                           | ✅ Simplified, Type-safe API    | ✅ Flexible, low-level API        |
+| Type-safe filtering queries    | ✅ Built-in, inspired by Prisma | SQL-based filtering               |
+| Type-safe field selection      | ✅ Automatic inference          | Custom SQL required               |
+| SQL query builder              | ✅ Built-in and type-checked    | Manual SQL writing                |
+| Optimized SQL query generation | ✅ Automatic & performant       | Developer-defined SQL             |
+| Pagination                     | ✅ Built-in by default          | Custom logic needed               |
+| Input-validations              | ✅ Automatic input validation   | Limited built-in validation       |
+| Developer experience           | ✅ Prisma-like, fluent API      | Low-level, more flexible          |
+| Error messages                 | ✅ Actionable, contextual       | Partial error messages            |
+| Bbundle size                   | ✅ Small and focused            | Larger due to broader feature set |
 
 ## 🚶‍♂️ How to get started?
 
