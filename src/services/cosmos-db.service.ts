@@ -628,3 +628,24 @@ export const createClient = <M extends Record<string, BaseModel>>(
 
   return models;
 };
+
+export type Metadata = {
+  /** Summary of the execution up until the point of returning data */
+  message?: string;
+
+  /** Whether the SQL query is executed */
+  isQueryExecuted: boolean;
+
+  /** Raw SQL query executed */
+  queryExecuted?: string;
+
+  /** Request charge */
+  requestCharge?: number;
+  /** Time taken for request execution in ms */
+  duration?: number;
+};
+
+export type SuccessResponse<T> = {
+  result: T;
+  _metadata: Metadata;
+};

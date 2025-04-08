@@ -250,6 +250,7 @@ const result = orm.user.delete({
 - Audit fields configuration (system fields) such as `createdAt`, `updatedAt`, `archivedAt`, etc
 - Bulk create / update operations
 - Observability - query logging
+- Performance monitoring
 - Filtering on more complex data types such as: composite types, enums, enum arrays, string arrays & number arrays
 
 ## Contributing
