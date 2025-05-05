@@ -350,13 +350,15 @@ export class BaseModel<T extends Base = typeof initial> {
     const start = Date.now();
     const { take, nextCursor } = args;
 
+    const isPaginatedQuery: boolean = nextCursor ? true : false;
+
     // validate "take" if provided by user
     if (take) {
       if (z.number().int().min(1).safeParse(take).success === false) {
         const response: Metadata = {
           message: `Please make sure you provide a positive integer as the number of items you want to retrieve. You provided "${take}" `,
           isQueryExecuted: false,
-          isPaginatedQuery: false,
+          isPaginatedQuery,
           duration: Date.now() - start,
           requestCharge: 0,
           queryExecuted: '',
@@ -369,7 +371,6 @@ export class BaseModel<T extends Base = typeof initial> {
 
     const query = buildQueryFindMany(args);
     const maxItemCount: number = take ?? 100;
-    const isPaginatedQuery: boolean = nextCursor ? true : false;
 
     const result = await fromPromise<
       FeedResponse<CosmosResource<T>>,
@@ -387,7 +388,7 @@ export class BaseModel<T extends Base = typeof initial> {
       const message = `Failed to retrieve items from db. ${result.error?.message}`;
       const response: Metadata = {
         isQueryExecuted: true,
-        queryExecuted: '',
+        queryExecuted: query,
         message,
         countItemsToRetrieve: maxItemCount,
         isPaginatedQuery,
@@ -697,6 +698,7 @@ export type Metadata = {
 
   /** CosmosDB Request charge */
   requestCharge?: number;
+
   /** Time taken for request execution in ms */
   duration: number;
 };
