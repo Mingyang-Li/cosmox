@@ -256,12 +256,12 @@ They are part of the syntax from [neverthrow](https://github.com/supermacro/neve
 ```typescript
 // without field-selection
 const result = orm.user.findOne({
-  where: { id: 'USER_ID' },
+  where: { id: '<USER_ID>' },
 });
 
 // with field-selection
 const result = orm.user.findOne<User>({
-  where: { id: 'USER_ID' },
+  where: { id: '<USER_ID>' },
   select: { id: true, firstName: true },
 });
 
