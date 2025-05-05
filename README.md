@@ -27,7 +27,7 @@ Cosmox is built for developers building data-driven applications on Azure Cosmos
 
 If you're tired of writing raw SQL queries with complex filters or managing inconsistent JSON responses, Cosmox is your new best friend.
 
-> Cosmox is not a replacement for @azure/cosmos — It's a lightweight abstraction built to make CosmosDB more accessible and type-safe for TypeScript developers.
+> Cosmox is not a replacement for `@azure/cosmos` — It's a lightweight abstraction built to make CosmosDB more accessible and type-safe.
 
 <p align="center">
   <img src="docs/demo.gif" />
@@ -158,8 +158,8 @@ Or, make a query by applying some complex filters, field-selections, and paginat
 const result = await orm.user.findMany({
   where: {
     firstName: {
-      startsWith: 'Sa',
-      endsWith: 'lyn',
+      startsWith: 'Ja',
+      endsWith: 'mes',
       mode: 'INSENSITIVE',
     },
     age: {
@@ -228,10 +228,10 @@ if (result.isErr()) {
   logger.debug(`How long did it take to execute? ${result.error.duration}`);
 }
 
-// only after you checked for errors, you are allowed to access the returned data
+// you can only access the returned data after you checked for errors
 result.value.data.forEach((item) => { ... })
 
-// You can also check for metadata of successful queries
+// You can also check for metadata on queries that're successfully executed
 logger.info(`Query successful. Metadata: ${JSON.stringify(result.value._metadata)}`)
 ```
 
