@@ -287,7 +287,8 @@ describe(BaseModel.name, () => {
       });
 
       const result = await baseModel.findMany({});
-      expect(result.items).toEqual([]);
+      expect(result.isOk()).toEqual(true);
+      expect(result._unsafeUnwrap().data.items).toEqual([]);
     });
 
     it('Should return [] when resources is undefined', async () => {
@@ -313,7 +314,8 @@ describe(BaseModel.name, () => {
       });
 
       const result = await baseModel.findMany({});
-      expect(result.items).toEqual([]);
+      expect(result.isOk()).toEqual(true);
+      expect(result._unsafeUnwrap().data.items).toEqual([]);
     });
 
     it('Should throw error when resources is null', async () => {
@@ -337,8 +339,8 @@ describe(BaseModel.name, () => {
         database: '',
         container: '',
       });
-
-      await expect(baseModel.findMany({})).rejects.toThrowError();
+      const result = await baseModel.findMany({});
+      expect(result.isErr()).toEqual(true);
     });
   });
 });

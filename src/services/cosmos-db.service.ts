@@ -8,7 +8,7 @@ import {
   CosmosClientOptions,
 } from '@azure/cosmos';
 import { z } from 'zod';
-import { fromPromise } from 'neverthrow';
+import { err, fromPromise, ok, ResultAsync } from 'neverthrow';
 import {
   isArray,
   isBoolean,
@@ -344,21 +344,33 @@ export class BaseModel<T extends Base = typeof initial> {
   /** Find many items with pagination and type-safe filters */
   public async findMany(
     args: FindManyArgs<Required<T>>,
-  ): Promise<FindManyResponse<T>> {
+  ): Promise<
+    ResultAsync<SuccessFindManyResponse<FindManyResponse<T>>, Metadata>
+  > {
+    const start = Date.now();
     const { take, nextCursor } = args;
 
+    const isPaginatedQuery: boolean = nextCursor ? true : false;
+
     // validate "take" if provided by user
-    if (!isNull(take) && !isUndefined(take)) {
+    if (take) {
       if (z.number().int().min(1).safeParse(take).success === false) {
-        throw new Error(
-          `Please make sure "take" is a positive integer. You provided ${take} `,
-        );
+        const response: Metadata = {
+          message: `Please make sure you provide a positive integer as the number of items you want to retrieve. You provided "${take}" `,
+          isQueryExecuted: false,
+          isPaginatedQuery,
+          duration: Date.now() - start,
+          requestCharge: 0,
+          queryExecuted: '',
+        };
+        return err(response);
       }
     }
 
     const container: Container = this.client;
 
     const query = buildQueryFindMany(args);
+    const maxItemCount: number = take ?? 100;
 
     const result = await fromPromise<
       FeedResponse<CosmosResource<T>>,
@@ -367,37 +379,76 @@ export class BaseModel<T extends Base = typeof initial> {
       container.items
         .query(query, {
           continuationToken: nextCursor,
-          maxItemCount: take ?? 100,
+          maxItemCount,
         })
         .fetchNext(),
       (e) => e as ErrorResponse,
     );
     if (result.isErr()) {
       const message = `Failed to retrieve items from db. ${result.error?.message}`;
-      throw new Error(message);
+      const response: Metadata = {
+        isQueryExecuted: true,
+        queryExecuted: query,
+        message,
+        countItemsToRetrieve: maxItemCount,
+        isPaginatedQuery,
+        duration: Date.now() - start,
+      };
+      return err(response);
     }
 
-    const { resources, continuationToken } = result.value;
+    const { resources, continuationToken, requestCharge } = result.value;
 
     if (isUndefined(resources)) {
-      const response: FindManyResponse<T> = {
+      const data: FindManyResponse<T> = {
         items: [],
         nextCursor: continuationToken,
       };
-      return response;
+
+      const response: SuccessFindManyResponse<FindManyResponse<T>> = {
+        data,
+        _metadata: {
+          isQueryExecuted: true,
+          queryExecuted: query,
+          countItemsToRetrieve: maxItemCount,
+          duration: Date.now() - start,
+          isPaginatedQuery,
+          requestCharge,
+        },
+      };
+      return ok<SuccessFindManyResponse<FindManyResponse<T>>>(response);
     }
 
     if (!isArray(resources)) {
-      const message = `Retrieved data from db, but received "${typeof resources}" instead of a list of items`;
-      throw new Error(message);
+      const response: Metadata = {
+        queryExecuted: query,
+        countItemsToRetrieve: maxItemCount,
+        isPaginatedQuery,
+        isQueryExecuted: true,
+        duration: Date.now() - start,
+        message: `Retrieved data from db, but received "${typeof resources}" instead of a list of items`,
+        requestCharge,
+      };
+      return err(response);
     }
 
-    const response: FindManyResponse<T> = {
+    const data: FindManyResponse<T> = {
       items: resources as unknown as T[],
       nextCursor: continuationToken,
     };
+    const response: SuccessFindManyResponse<FindManyResponse<T>> = {
+      data,
+      _metadata: {
+        isQueryExecuted: true,
+        queryExecuted: query,
+        isPaginatedQuery,
+        countItemsToRetrieve: maxItemCount,
+        duration: Date.now() - start,
+        message: `Retrieved data from db, but received "${typeof resources}" instead of a list of items`,
+      },
+    };
 
-    return response;
+    return ok<SuccessFindManyResponse<FindManyResponse<T>>>(response);
   }
 
   /**
@@ -627,4 +678,36 @@ export const createClient = <M extends Record<string, BaseModel>>(
   const models = options.models(builder);
 
   return models;
+};
+
+export type Metadata = {
+  /** Summary of the execution up until the point of returning data */
+  message?: string;
+
+  /** Whether the SQL query is executed */
+  isQueryExecuted: boolean;
+
+  /** Whether the query is part of a paginated query */
+  isPaginatedQuery: boolean;
+
+  /** Useful for find-many queries, indicates how many items the query is intending the retrieve */
+  countItemsToRetrieve?: number;
+
+  /** Raw SQL query executed - important for find-many operations */
+  queryExecuted: string;
+
+  /** CosmosDB Request charge */
+  requestCharge?: number;
+
+  /** Time taken for request execution in ms */
+  duration: number;
+};
+
+export type SuccessFindManyResponse<T> = {
+  data: T;
+  _metadata: Metadata;
+};
+
+export type FailureResponse = {
+  _metadata: Metadata;
 };
