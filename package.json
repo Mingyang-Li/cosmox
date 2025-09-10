@@ -40,7 +40,7 @@
       }
     }
   },
-  "packageManager": "pnpm@9.8.10",
+  "packageManager": "pnpm@9.8.0",
   "dependencies": {
     "@azure/cosmos": "4.2.0",
     "neverthrow": "8.1.1",
