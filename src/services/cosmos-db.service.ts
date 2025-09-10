@@ -12,11 +12,13 @@ import { err, fromPromise, ok, ResultAsync } from 'neverthrow';
 import {
   isArray,
   isBoolean,
+  isDate,
   isEmptyArray,
   isNonEmptyString,
   isNull,
   isNumber,
   isObject,
+  isString,
   isUndefined,
   objectIsEmpty,
 } from '@/utils';
@@ -146,14 +148,15 @@ export const createFilter = <TFilterKey extends keyof TFilter>(
   }
 
   if (filterKey === 'in') {
-    return `c.${field} IN (${(value as [])
+    const transformedValue = (value as [])
       ?.map((v) => {
-        if (isBoolean(v) || isNumber(v)) {
+        if (isBoolean(v) || isNumber(v) || isDate(v) || isString(v)) {
           return v;
         }
         return `'${v}'`;
       })
-      .join(', ')})`;
+      .join(', ');
+    return `c.${field} IN (${transformedValue})`;
   }
 
   if (filterKey === 'notIn') {

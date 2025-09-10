@@ -86,7 +86,7 @@ test('Should return x items when requesting x items', async () => {
   const result = await db.user.findMany({
     take: 10,
   });
-  expect(result.items?.length).toEqual(10);
+  expect(result._unsafeUnwrap().data.items?.length).toEqual(10);
 });
 
 test('Should return items that satisfies filters applied', async () => {
@@ -105,5 +105,5 @@ test('Should return items that satisfies filters applied', async () => {
       lastName: true,
     },
   });
-  expect(result.items?.length).toEqual(0);
+  expect(result._unsafeUnwrap().data.items?.length).toEqual(0);
 });
