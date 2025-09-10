@@ -14,6 +14,7 @@ export const StringFilterSchema = z
     not: z.string().optional(),
     notIn: z.array(z.string()).optional(),
     mode: QueryModeSchema.optional(),
+    in: z.array(z.string()).optional(),
   })
   .strict();
 export type StringFilter = z.infer<typeof StringFilterSchema>;

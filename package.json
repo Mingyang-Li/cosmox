@@ -1,7 +1,7 @@
 {
   "name": "cosmox",
   "description": "⚡ Type-safe ORM for Azure CosmosDB NoSQL, inspired by Prisma",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "keywords": [
     "cosmosdb",
     "prisma",
